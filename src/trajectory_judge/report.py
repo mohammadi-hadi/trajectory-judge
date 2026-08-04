@@ -49,13 +49,15 @@ def score_all(trajectories: list[Trajectory], verdicts: list[Verdict]) -> list[S
 
 
 def summary_table(scores: list[Scores]) -> str:
+    # Nine columns is what fits a rendered README without the cost column falling off the
+    # right edge. `n` is dropped because the strata table underneath says more than it did.
     header = (
-        "| Judge | n | Detection F1 | Silent recall | Loud recall | False alarms "
-        "| Step exact | Type macro-F1 | ECE | s / trajectory |\n"
-        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|\n"
+        "| Judge | F1 | Silent recall | Loud recall | False alarms "
+        "| Step exact | Type F1 | ECE | s/traj |\n"
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|\n"
     )
     rows = "".join(
-        f"| `{s.judge_id}` | {s.n} | {_fmt(s.f1)} | {_fmt(s.silent_recall)} "
+        f"| `{s.judge_id}` | {_fmt(s.f1)} | {_fmt(s.silent_recall)} "
         f"| {_fmt(s.loud_recall)} | {_fmt(s.false_alarm_rate)} "
         # A judge with no failure_step field never attempted localisation. Printing 0.000 would
         # read as a judge that tried and failed, which is a different and unearned criticism.
