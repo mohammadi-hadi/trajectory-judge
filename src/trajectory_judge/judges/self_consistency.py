@@ -13,15 +13,12 @@ flatter the ensemble for free.
 from __future__ import annotations
 
 from collections import Counter
-from typing import TypeVar
 
 from trajectory_judge.env.world import Instance
 from trajectory_judge.judges.base import Judge
 from trajectory_judge.judges.llm import StepRubricJudge
 from trajectory_judge.judges.ollama_client import DEFAULT_HOST
 from trajectory_judge.trace import Trajectory, Verdict
-
-T = TypeVar("T")
 
 
 class SelfConsistencyJudge(Judge):
@@ -66,7 +63,7 @@ class SelfConsistencyJudge(Judge):
         return verdict
 
 
-def _mode(values: list[T | None]) -> T | None:
+def _mode[T](values: list[T | None]) -> T | None:
     """Most common non-null value; ties broken by first appearance, so it stays deterministic."""
     present = [v for v in values if v is not None]
     if not present:
