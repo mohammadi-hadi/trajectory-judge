@@ -79,7 +79,20 @@ def per_type_table(scores: list[Scores]) -> str:
     for failure_type in types:
         cells = " | ".join(_fmt(s.per_type_recall.get(failure_type, 0.0), 2) for s in scores)
         rows += f"| {failure_type} | {cells} |\n"
-    return header + rows + "\nRecall on each injected failure type.\n"
+    # The last row is the reference line, not a failure type: a judge that flags a third of
+    # correct trajectories has no signal on a type it "detects" a third of the time, and a
+    # recall column read on its own hides that.
+    baseline = " | ".join(_fmt(s.false_alarm_rate, 2) for s in scores)
+    rows += f"| *(false alarms on clean)* | {baseline} |\n"
+    return (
+        header
+        + rows
+        + (
+            "\nRecall on each injected failure type. Read each column against its last row: recall "
+            "at or near a judge's false-alarm rate is not detection, it is the judge's baseline "
+            "willingness to say *faulty*.\n"
+        )
+    )
 
 
 def confusion_table(judge_id: str, trajectories: list[Trajectory], verdicts: list[Verdict]) -> str:
