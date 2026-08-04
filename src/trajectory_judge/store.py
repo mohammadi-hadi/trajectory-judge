@@ -66,8 +66,21 @@ def judged_keys(directory: Path) -> set[tuple[str, str]]:
 
 
 def write_run_meta(directory: Path, meta: dict[str, Any]) -> None:
+    """Append this invocation to the run log rather than replacing it.
+
+    A full experiment is several invocations — different judges, different models — and the
+    last one to finish is not a description of the whole. Overwriting would leave metadata
+    that quietly contradicts the verdicts sitting next to it.
+    """
     directory.mkdir(parents=True, exist_ok=True)
-    (directory / RUN_META).write_text(json.dumps(meta, indent=2, sort_keys=True) + "\n")
+    existing = read_run_meta(directory)
+    # A file written before this became a list is itself the first run, not something to drop.
+    runs: list[dict[str, Any]] = list(existing.get("runs", [existing] if existing else []))
+    if meta not in runs:
+        runs.append(meta)
+    (directory / RUN_META).write_text(
+        json.dumps({"runs": runs}, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
 
 
 def read_run_meta(directory: Path) -> dict[str, Any]:
