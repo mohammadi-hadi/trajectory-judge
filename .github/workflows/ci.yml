@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: pip install -e ".[dev]"
+      - name: Format
+        run: ruff format --check src tests
+      - name: Lint
+        run: ruff check src tests
+      - name: Types
+        run: mypy src
+      # No model, no network: the suite runs on the deterministic environment and the mock judge.
+      - name: Tests
+        run: pytest
+
+  results-drift:
+    # The committed tables must be exactly what the committed raw verdicts produce. Figures are
+    # not byte-reproducible across matplotlib versions, so only the numbers are diffed.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -e ".[dev]"
+      - name: Rebuild tables from committed raw verdicts
+        run: |
+          if [ ! -f results/raw/verdicts.jsonl ]; then
+            echo "no committed results yet; nothing to check"
+            exit 0
+          fi
+          trajectory-judge report --raw results/raw --out results
+          git diff --exit-code -- results/tables
