@@ -16,6 +16,7 @@ from trajectory_judge.trace import FailureType, Trajectory, Verdict
 
 ACCENT = "#1E3A5F"
 MUTED = "#B0B7C3"
+ALARM = "#A23B33"
 
 SUMMARY = "summary.md"
 PER_TYPE = "per_type_recall.md"
@@ -156,7 +157,7 @@ def _figures(
     written: list[Path] = []
 
     # Silent versus loud recall: the headline picture.
-    fig, ax = plt.subplots(figsize=(7.5, 3.6))
+    fig, ax = plt.subplots(figsize=(7.5, 4.0))
     labels = [s.judge_id for s in scores]
     positions = range(len(labels))
     width = 0.38
@@ -174,16 +175,28 @@ def _figures(
         label="outcome still correct",
         color=ACCENT,
     )
+    # Without this the always-say-faulty judge has two bars at 1.0 and looks like the best one
+    # on the chart. Recall is only meaningful next to the rate at which a judge cries wolf.
+    ax.plot(
+        list(positions),
+        [s.false_alarm_rate for s in scores],
+        marker="x",
+        markersize=8,
+        markeredgewidth=2,
+        linestyle="none",
+        color=ALARM,
+        label="false alarms on clean",
+    )
     ax.set_xticks(list(positions))
     ax.set_xticklabels(labels, rotation=20, ha="right", fontsize=8)
     ax.set_ylabel("recall")
-    ax.set_ylim(0, 1)
+    ax.set_ylim(0, 1.05)
     ax.set_title("Fault recall, split by whether the fault changed the answer", fontsize=10)
-    ax.legend(frameon=False, fontsize=8)
+    # Legend under the axes: every bar reaches the top of the plot, so there is no room inside.
+    ax.legend(frameon=False, fontsize=8, ncol=3, loc="upper center", bbox_to_anchor=(0.5, -0.30))
     ax.spines[["top", "right"]].set_visible(False)
-    fig.tight_layout()
     path = out_dir / "silent_vs_loud.png"
-    fig.savefig(path, dpi=160)
+    fig.savefig(path, dpi=160, bbox_inches="tight")
     plt.close(fig)
     written.append(path)
 
