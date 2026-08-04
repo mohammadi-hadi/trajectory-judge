@@ -13,9 +13,9 @@ because the metric meant to catch them is structurally blind to them.
 This repository measures that blind spot where the ground truth is known by construction: a
 deterministic tool-using environment, a scripted policy that always solves it correctly, and a
 fault injector that breaks exactly one thing at a known step and records whether the
-customer-visible outcome survived. Five judges are then asked the same four questions about each
-trajectory — is it faulty, at which step, of which kind, how sure are you — and scored on
-detection, localisation, typing, calibration and cost.
+customer-visible outcome survived. Five judges are then asked the same questions about each
+trajectory — is it faulty, of which kind, at which step if they can see steps at all, and how
+sure are you — and scored on detection, localisation, typing, calibration and cost.
 
 ```mermaid
 flowchart LR
@@ -113,7 +113,7 @@ reproduces every number here with no model and no network.
 | Judge | n | Detection F1 | Silent recall | Loud recall | False alarms | Step exact | Type macro-F1 | ECE | s / trajectory |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | `programmatic` | 400 | 0.800 | 0.429 | 1.000 | 0.000 | 1.000 | 0.667 | 0.075 | 0.0 |
-| `outcome:qwen2.5:14b` | 400 | 0.712 | 0.451 | 0.840 | 0.330 | 0.000 | 0.300 | 0.253 | 3.5 |
+| `outcome:qwen2.5:14b` | 400 | 0.712 | 0.451 | 0.840 | 0.330 | n/a | 0.300 | 0.253 | 3.5 |
 | `step:qwen2.5:14b` | 400 | 0.923 | 0.766 | 0.984 | 0.000 | 0.973 | 0.606 | 0.033 | 10.4 |
 | `step:llama3.1:8b` | 400 | 0.852 | 0.983 | 1.000 | 1.000 | 0.807 | 0.311 | 0.148 | 1.5 |
 | `selfcons3:qwen2.5:14b` | 400 | 0.913 | 0.760 | 0.960 | 0.010 | 0.982 | 0.583 | 0.084 | 30.2 |
@@ -129,6 +129,10 @@ Strata each judge actually saw:
 | `selfcons3:qwen2.5:14b` | 100 | 175 | 125 |
 
 A *silent* fault left the customer-visible outcome correct; a *loud* one did not.
+
+`n/a` under step localisation means the judge has no step field to fill: the outcome-only judge never sees the steps, so it is not asked to name one.
+
+**The `programmatic` row's ECE is not a measurement.** The rule engine has no opinion about its own reliability, so its confidence is two hand-set constants (0.95 when a rule fires, 0.60 when none does). Its ECE scores those constants; every other row scores what a model actually said about itself.
 
 | Failure type | `programmatic` | `outcome:qwen2.5:14b` | `step:qwen2.5:14b` | `step:llama3.1:8b` | `selfcons3:qwen2.5:14b` |
 |---|---|---|---|---|---|

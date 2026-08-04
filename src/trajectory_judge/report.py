@@ -56,7 +56,10 @@ def summary_table(scores: list[Scores]) -> str:
     )
     rows = "".join(
         f"| `{s.judge_id}` | {s.n} | {_fmt(s.f1)} | {_fmt(s.silent_recall)} "
-        f"| {_fmt(s.loud_recall)} | {_fmt(s.false_alarm_rate)} | {_fmt(s.step_exact)} "
+        f"| {_fmt(s.loud_recall)} | {_fmt(s.false_alarm_rate)} "
+        # A judge with no failure_step field never attempted localisation. Printing 0.000 would
+        # read as a judge that tried and failed, which is a different and unearned criticism.
+        f"| {'n/a' if s.step_scored_n == 0 else _fmt(s.step_exact)} "
         f"| {_fmt(s.type_macro_f1)} | {_fmt(s.ece)} | {_fmt(s.mean_latency_s, 1)} |\n"
         for s in scores
     )
@@ -71,6 +74,12 @@ def summary_table(scores: list[Scores]) -> str:
     )
     footer += (
         "\nA *silent* fault left the customer-visible outcome correct; a *loud* one did not.\n"
+        "\n`n/a` under step localisation means the judge has no step field to fill: the "
+        "outcome-only judge never sees the steps, so it is not asked to name one.\n"
+        "\n**The `programmatic` row's ECE is not a measurement.** The rule engine has no opinion "
+        "about its own reliability, so its confidence is two hand-set constants (0.95 when a "
+        "rule fires, 0.60 when none does). Its ECE scores those constants; every other row "
+        "scores what a model actually said about itself.\n"
     )
     return header + rows + footer
 
