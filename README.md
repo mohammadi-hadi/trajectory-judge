@@ -148,6 +148,14 @@ Recall on each injected failure type. Read each column against its last row: rec
 
 ![Fault recall split by whether the fault changed the answer](results/figures/silent_vs_loud.png)
 
+Read the red × against the bars: a judge that flags everything scores perfect recall and is
+worth nothing.
+
+![Stated confidence against observed accuracy for each judge](results/figures/calibration.png)
+
+Points below the diagonal are overconfidence. The outcome-only judge sits well below it across
+its whole range — it is most certain in exactly the region where it is least right.
+
 ### What this says
 
 **The blind spot is real and it is about half the faults.** `outcome:qwen2.5:14b` catches 84% of
