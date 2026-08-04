@@ -9,6 +9,7 @@ confusion matrix that says more about the generator than about any judge.
 
 from __future__ import annotations
 
+import random
 from pathlib import Path
 
 import typer
@@ -56,6 +57,12 @@ def build_dataset(n: int, seed: int) -> tuple[list[Trajectory], dict[str, Instan
                 f"  note: only {taken}/{per_type} instances could host {failure_type.value}",
                 err=True,
             )
+
+    # Shuffle, deterministically, so that *any prefix is a stratified sample*. Built in order the
+    # set is 100 clean then 50 of each type in turn, which makes `trajectories[:150]` all-clean
+    # plus one failure type — a subset judge scored on it would report a loud recall of zero
+    # because it never saw a loud fault. That is a bug that looks like a finding.
+    random.Random(f"order-{seed}").shuffle(trajectories)
     return trajectories, by_id
 
 

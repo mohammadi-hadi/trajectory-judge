@@ -56,10 +56,17 @@ def summary_table(scores: list[Scores]) -> str:
         f"| {_fmt(s.type_macro_f1)} | {_fmt(s.ece)} | {_fmt(s.mean_latency_s, 1)} |\n"
         for s in scores
     )
-    counts = scores[0] if scores else Scores(judge_id="none")
+    # Per judge, not once for the table: a judge run on a subset has different denominators, and
+    # a single strata line under the table would invite reading every row against the wrong ones.
     footer = (
-        f"\nStrata: {counts.clean_n} clean, {counts.silent_n} silent faults "
-        f"(outcome still correct), {counts.loud_n} loud faults (outcome broken).\n"
+        "\nStrata each judge actually saw:\n\n"
+        "| Judge | clean | silent faults | loud faults |\n|---|---:|---:|---:|\n"
+    )
+    footer += "".join(
+        f"| `{s.judge_id}` | {s.clean_n} | {s.silent_n} | {s.loud_n} |\n" for s in scores
+    )
+    footer += (
+        "\nA *silent* fault left the customer-visible outcome correct; a *loud* one did not.\n"
     )
     return header + rows + footer
 

@@ -35,6 +35,21 @@ def test_dataset_is_balanced_and_deterministic() -> None:
     assert all(t.instance_id in instances for t in trajectories)
 
 
+def test_any_prefix_of_the_dataset_is_a_stratified_sample() -> None:
+    """Subset judges score a prefix, so a prefix must not be all-clean or one failure type.
+
+    Built in order the set is clean-block-then-type-blocks, and a 150-trajectory prefix of 400
+    would contain no loud faults at all — a subset judge would then report a loud recall of
+    zero that says nothing about the judge.
+    """
+    trajectories, _ = build_dataset(400, seed=7)
+    prefix = trajectories[:150]
+    assert sum(1 for t in prefix if not t.label.faulty) > 10
+    assert sum(1 for t in prefix if t.label.silent) > 10
+    assert sum(1 for t in prefix if t.label.faulty and not t.label.outcome_correct) > 10
+    assert len({t.label.failure_type for t in prefix if t.label.failure_type}) == len(FailureType)
+
+
 def test_every_trajectory_id_is_unique() -> None:
     trajectories, _ = build_dataset(120, seed=7)
     ids = [t.trajectory_id for t in trajectories]
