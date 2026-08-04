@@ -1,0 +1,60 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "trajectory-judge"
+version = "0.1.0"
+description = "Measuring what LLM judges miss when an agent reaches the right answer the wrong way"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Hadi Mohammadi" }]
+requires-python = ">=3.11"
+keywords = ["llm", "agents", "evaluation", "llm-as-judge", "trajectory", "calibration"]
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+  "pydantic>=2.7",
+  "httpx>=0.27",
+  "numpy>=1.26",
+  "typer>=0.12",
+]
+
+[project.optional-dependencies]
+report = ["matplotlib>=3.8"]
+dev = [
+  "pytest>=8.0",
+  "ruff>=0.5",
+  "mypy>=1.10",
+  "matplotlib>=3.8",
+]
+
+[project.scripts]
+trajectory-judge = "trajectory_judge.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/trajectory_judge"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unreachable = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["matplotlib.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
