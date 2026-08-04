@@ -17,6 +17,9 @@ from trajectory_judge.trace import FailureType, Trajectory, Verdict
 ACCENT = "#1E3A5F"
 MUTED = "#B0B7C3"
 ALARM = "#A23B33"
+#: One hue, five values. Distinguishable in the calibration plot without a second colour.
+SHADES = ("#12263A", "#1E3A5F", "#3C6288", "#6E96BC", "#A8C0D8")
+MARKERS = ("o", "s", "^", "D", "v")
 
 SUMMARY = "summary.md"
 PER_TYPE = "per_type_recall.md"
@@ -201,7 +204,7 @@ def _figures(
     written.append(path)
 
     # Reliability curves.
-    fig, ax = plt.subplots(figsize=(4.6, 4.4))
+    fig, ax = plt.subplots(figsize=(5.4, 4.6))
     ax.plot([0, 1], [0, 1], linestyle="--", color=MUTED, linewidth=1)
     by_judge = {s.judge_id: s for s in scores}
     for index, judge_id in enumerate(by_judge):
@@ -216,11 +219,10 @@ def _figures(
         ax.plot(
             [c for c, _, _ in curve],
             [a for _, a, _ in curve],
-            marker="o",
-            markersize=4,
-            linewidth=1.4,
-            alpha=1.0 - 0.14 * index,
-            color=ACCENT,
+            marker=MARKERS[index % len(MARKERS)],
+            markersize=5,
+            linewidth=1.5,
+            color=SHADES[index % len(SHADES)],
             label=judge_id,
         )
     ax.set_xlabel("stated confidence")
@@ -228,7 +230,7 @@ def _figures(
     ax.set_xlim(0.45, 1.02)
     ax.set_ylim(0, 1.02)
     ax.set_title("Calibration", fontsize=10)
-    ax.legend(frameon=False, fontsize=7)
+    ax.legend(frameon=False, fontsize=7, loc="upper left")
     ax.spines[["top", "right"]].set_visible(False)
     fig.tight_layout()
     path = out_dir / "calibration.png"
