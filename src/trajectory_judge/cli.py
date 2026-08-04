@@ -118,6 +118,27 @@ def run(
 
 
 @app.command()
+def agent(
+    n: int = typer.Option(60, help="Episodes to play."),
+    model: str = typer.Option("qwen2.5:14b", help="Ollama model driving the agent."),
+    seed: int = typer.Option(7),
+    out: Path = typer.Option(Path("results/agent"), help="Where agent episodes are appended."),
+) -> None:
+    """Let a model play the environment, to check the injected faults resemble real ones."""
+    from trajectory_judge.agents.llm_agent import run_llm_agent
+
+    done = {t.trajectory_id for t in store.read_trajectories(out)}
+    instances = [
+        i for i in generate_instances(n, seed=seed) if f"{i.instance_id}-agent" not in done
+    ]
+    typer.echo(f"{len(instances)} episodes to play ({len(done)} cached)")
+    for index, instance in enumerate(instances, start=1):
+        store.append_trajectory(out, run_llm_agent(instance, model, seed=seed))
+        if index % 10 == 0 or index == len(instances):
+            typer.echo(f"  {index}/{len(instances)}")
+
+
+@app.command()
 def report(
     raw: Path = typer.Option(Path("results/raw"), "--raw", help="Directory holding raw verdicts."),
     out: Path = typer.Option(Path("results"), "--out", help="Where tables and figures go."),

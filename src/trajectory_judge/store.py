@@ -39,6 +39,13 @@ def write_trajectories(directory: Path, trajectories: Iterable[Trajectory]) -> P
     return path
 
 
+def append_trajectory(directory: Path, trajectory: Trajectory) -> None:
+    """Append a single trajectory, so agent episodes resume the same way verdicts do."""
+    directory.mkdir(parents=True, exist_ok=True)
+    with (directory / TRAJECTORIES).open("a", encoding="utf-8") as handle:
+        handle.write(trajectory.model_dump_json() + "\n")
+
+
 def read_trajectories(directory: Path) -> list[Trajectory]:
     return [Trajectory.model_validate(row) for row in _read_lines(directory / TRAJECTORIES)]
 

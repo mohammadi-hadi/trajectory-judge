@@ -20,6 +20,7 @@ MUTED = "#B0B7C3"
 SUMMARY = "summary.md"
 PER_TYPE = "per_type_recall.md"
 CONFUSION = "confusion.md"
+AGENT = "agent_runs.md"
 
 
 def _fmt(value: float, places: int = 3) -> str:
@@ -83,6 +84,41 @@ def confusion_table(judge_id: str, trajectories: list[Trajectory], verdicts: lis
         cells = " | ".join(str(matrix[true_type][column]) for column in columns)
         out += f"| {true_type} | {cells} |\n"
     return out + "\n"
+
+
+def agent_table(episodes: list[Trajectory]) -> str:
+    """What a model actually does in this environment, labelled by the checker, not by an oracle.
+
+    Reported separately from the judge comparison and never mixed into it: the checker cannot
+    see two of the six failure types, so "no rule fired" is not the same claim as "clean".
+    """
+    total = len(episodes)
+    if not total:
+        return ""
+    flagged = sum(1 for t in episodes if t.label.faulty)
+    wrong_outcome = sum(1 for t in episodes if not t.label.outcome_correct)
+    silent = sum(1 for t in episodes if t.label.silent)
+    counts: dict[str, int] = {}
+    for episode in episodes:
+        if episode.label.failure_type is not None:
+            key = episode.label.failure_type.value
+            counts[key] = counts.get(key, 0) + 1
+
+    out = f"Episodes played: **{total}**\n\n| Observation | Count | Share |\n|---|---:|---:|\n"
+    for label, value in (
+        ("flagged by the rule checker or wrong outcome", flagged),
+        ("wrong customer-visible outcome", wrong_outcome),
+        ("faulty but outcome still correct", silent),
+    ):
+        out += f"| {label} | {value} | {_fmt(value / total, 2)} |\n"
+    if counts:
+        out += "\n| Rule-visible failure type | Count |\n|---|---:|\n"
+        for key in sorted(counts):
+            out += f"| {key} | {counts[key]} |\n"
+    return out + (
+        "\nLabels here come from the rule checker, which is blind to `wrong_tool` and "
+        "`unsupported_claim`, so the true fault rate is at least this high.\n"
+    )
 
 
 def _figures(
@@ -195,6 +231,12 @@ def build(raw_dir: Path, out_dir: Path) -> dict[str, list[Path]]:
     ):
         path = tables_dir / name
         path.write_text(provenance + content, encoding="utf-8")
+        written.append(path)
+
+    episodes = store.read_trajectories(raw_dir.parent / "agent")
+    if episodes:
+        path = tables_dir / AGENT
+        path.write_text(provenance + agent_table(episodes), encoding="utf-8")
         written.append(path)
 
     figures = _figures(out_dir / "figures", scores, trajectories, verdicts)
