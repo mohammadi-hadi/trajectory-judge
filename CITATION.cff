@@ -4,6 +4,10 @@ title: "trajectory-judge: measuring what LLM judges miss when an agent reaches t
 type: software
 version: "0.1.0"
 date-released: "2026-08-04"
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.21797926
+    description: Zenodo concept DOI (all versions)
 license: MIT
 repository-code: "https://github.com/mohammadi-hadi/trajectory-judge"
 url: "https://github.com/mohammadi-hadi/trajectory-judge"
