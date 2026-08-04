@@ -210,6 +210,21 @@ class World:
         return Observation(ok=True, data={"sent": True})
 
 
+def outcome_of(steps: list[Any]) -> Outcome:
+    """Derive the end state from the steps themselves.
+
+    Reading the trajectory rather than the live world matters because mutated trajectories are
+    edited after the fact and are never replayed against a :class:`World`.
+    """
+    for step in steps:
+        if step.call.tool == "issue_refund" and step.observation.ok:
+            return Outcome("refund", float(step.observation.data.get("refunded_eur", 0.0)))
+    for step in steps:
+        if step.call.tool == "escalate" and step.observation.ok:
+            return Outcome("escalate")
+    return Outcome("none")
+
+
 def _make_instance(rng: random.Random, index: int, difficulty: str) -> Instance:
     name = f"{rng.choice(_FIRST)} {rng.choice(_LAST)}"
     email = f"{name.split()[0].lower()}.{name.split()[1].lower()}{rng.randint(10, 99)}@example.com"
