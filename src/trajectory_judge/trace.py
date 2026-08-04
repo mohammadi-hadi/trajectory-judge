@@ -7,13 +7,13 @@ one structure, so the schema is deliberately small and JSON-round-trippable.
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field
 
 
-class FailureType(str, Enum):
+class FailureType(StrEnum):
     """The six failure modes this project injects and asks judges to recognise.
 
     The definitions are mutually exclusive on purpose. Two pairs are easy to conflate, so
@@ -98,9 +98,7 @@ class Trajectory(BaseModel):
             for step in self.steps:
                 args = ", ".join(f"{k}={v!r}" for k, v in step.call.args.items())
                 obs = step.observation
-                result = (
-                    f"ok={obs.ok} {obs.data}" if obs.ok else f"ok=False error={obs.error!r}"
-                )
+                result = f"ok={obs.ok} {obs.data}" if obs.ok else f"ok=False error={obs.error!r}"
                 parts.append(f"[step {step.index}] thought: {step.thought}")
                 parts.append(f"[step {step.index}] call: {step.call.tool}({args})")
                 parts.append(f"[step {step.index}] observation: {result}")
