@@ -1,0 +1,34 @@
+cff-version: 1.2.0
+message: "If you use this material, please cite it as below."
+title: "trajectory-judge: measuring what LLM judges miss when an agent reaches the right answer the wrong way"
+type: software
+version: "0.1.0"
+date-released: "2026-08-04"
+license: MIT
+repository-code: "https://github.com/mohammadi-hadi/trajectory-judge"
+url: "https://github.com/mohammadi-hadi/trajectory-judge"
+authors:
+  - given-names: "Hadi"
+    family-names: "Mohammadi"
+    orcid: "https://orcid.org/0000-0003-0860-9200"
+    affiliation: "Utrecht University"
+keywords:
+  - "LLM-as-judge"
+  - "agent evaluation"
+  - "tool-using agents"
+  - "fault injection"
+  - "calibration"
+  - "large language models"
+abstract: >-
+  A controlled comparison of how well LLM judges detect faults in tool-using
+  agent trajectories. A synthetic support-desk environment with a scripted
+  oracle policy provides known-correct behaviour; a six-type fault injector
+  then breaks exactly one step at a known index and records whether the
+  customer-visible outcome survived, which stratifies failures into silent
+  and loud. Five judges — a programmatic rule checker, an outcome-only judge,
+  a step-rubric judge at two model sizes, and a self-consistency ensemble —
+  are scored on detection, step localisation, failure-type classification,
+  calibration and cost. The outcome-only judge, which is the production
+  default, recovers 0.84 of faults that broke the answer but only 0.45 of
+  those that did not, while raising false alarms on a third of correct
+  trajectories. Every raw verdict is committed so the tables rebuild offline.
