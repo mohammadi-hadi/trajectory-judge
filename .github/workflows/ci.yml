@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.12", "3.13"]
+        python-version: ["3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -29,6 +29,38 @@ jobs:
       # No model, no network: the suite runs on the deterministic environment and the mock judge.
       - name: Tests
         run: pytest
+
+  package:
+    # The wheel must work where the checkout is not. Build both distributions, check the
+    # metadata renders, install the wheel into a bare environment, and run the suite and the
+    # console script against the installed package instead of the source tree.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build
+        run: |
+          pip install build twine
+          python -m build
+          twine check --strict dist/*
+      - name: Install the wheel into a clean environment
+        run: |
+          python -m venv /tmp/wheel-env
+          /tmp/wheel-env/bin/pip install dist/*.whl pytest
+      - name: Run the suite against the installed wheel
+        run: /tmp/wheel-env/bin/pytest
+      - name: Smoke-test the console script
+        # `report` runs without matplotlib here, which also exercises the figures-skipped path.
+        run: |
+          /tmp/wheel-env/bin/trajectory-judge --help
+          /tmp/wheel-env/bin/trajectory-judge run --n 12 --judges mock,programmatic --seed 7 --out /tmp/pkg-demo
+          /tmp/wheel-env/bin/trajectory-judge report --raw /tmp/pkg-demo --out /tmp/pkg-demo
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
 
   results-drift:
     # The committed tables must be exactly what the committed raw verdicts produce. Figures are
