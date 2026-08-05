@@ -147,12 +147,12 @@ A *silent* fault left the customer-visible outcome correct; a *loud* one did not
 
 Recall on each injected failure type. Read each column against its last row: recall at or near a judge's false-alarm rate is not detection, it is the judge's baseline willingness to say *faulty*.
 
-![Fault recall split by whether the fault changed the answer](results/figures/silent_vs_loud.png)
+![Fault recall split by whether the fault changed the answer](https://raw.githubusercontent.com/mohammadi-hadi/trajectory-judge/main/results/figures/silent_vs_loud.png)
 
 Read the red × against the bars: a judge that flags everything scores perfect recall and is
 worth nothing.
 
-![Stated confidence against observed accuracy for each judge](results/figures/calibration.png)
+![Stated confidence against observed accuracy for each judge](https://raw.githubusercontent.com/mohammadi-hadi/trajectory-judge/main/results/figures/calibration.png)
 
 Points below the diagonal are overconfidence. The outcome-only judge sits well below it across
 its whole range — it is most certain in exactly the region where it is least right.
