@@ -7,20 +7,26 @@ name = "trajectory-judge"
 version = "0.1.0"
 description = "Measuring what LLM judges miss when an agent reaches the right answer the wrong way"
 readme = "README.md"
-license = { file = "LICENSE" }
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{ name = "Hadi Mohammadi" }]
 requires-python = ">=3.12"
 keywords = ["llm", "agents", "evaluation", "llm-as-judge", "trajectory", "calibration"]
 classifiers = [
-  "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
   "pydantic>=2.7",
   "httpx>=0.27",
   "typer>=0.12",
 ]
+
+[project.urls]
+Repository = "https://github.com/mohammadi-hadi/trajectory-judge"
+Issues = "https://github.com/mohammadi-hadi/trajectory-judge/issues"
+DOI = "https://doi.org/10.5281/zenodo.21797926"
 
 [project.optional-dependencies]
 report = ["matplotlib>=3.8"]
@@ -29,6 +35,8 @@ dev = [
   "ruff>=0.5",
   "mypy>=1.10",
   "matplotlib>=3.8",
+  "build>=1.2",
+  "twine>=6.1",
 ]
 
 [project.scripts]
@@ -36,6 +44,11 @@ trajectory-judge = "trajectory_judge.cli:app"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/trajectory_judge"]
+
+[tool.hatch.build.targets.sdist]
+# Source, tests and citation metadata only: results/ is 2.7 MB of committed evidence that
+# belongs to the repository, not to an installable distribution.
+include = ["src", "tests", "README.md", "LICENSE", "CITATION.cff"]
 
 [tool.ruff]
 line-length = 100
