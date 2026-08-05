@@ -1,6 +1,7 @@
 # trajectory-judge
 
 [![CI](https://github.com/mohammadi-hadi/trajectory-judge/actions/workflows/ci.yml/badge.svg)](https://github.com/mohammadi-hadi/trajectory-judge/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/trajectory-judge)](https://pypi.org/project/trajectory-judge/)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21797926.svg)](https://doi.org/10.5281/zenodo.21797926)
 
 How much does an LLM judge miss when an agent reaches the right answer the wrong way?
@@ -51,6 +52,12 @@ flowchart LR
   scored on whether that confidence meant anything.
 
 ## Quickstart
+
+```bash
+pip install trajectory-judge
+```
+
+Working from a clone instead:
 
 ```bash
 pip install -e ".[dev]"
