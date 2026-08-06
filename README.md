@@ -57,6 +57,12 @@ flowchart LR
 pip install trajectory-judge
 ```
 
+Or without installing anything, since the mock judge needs no model:
+
+```bash
+docker run --rm ghcr.io/mohammadi-hadi/trajectory-judge
+```
+
 Working from a clone instead:
 
 ```bash
