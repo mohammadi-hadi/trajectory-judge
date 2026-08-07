@@ -310,6 +310,22 @@ questions and only the first one is answered here.
 - Mohammadi et al. — *EvalMORAAL: Interpretable Chain-of-Thought and LLM-as-Judge Evaluation for Moral Alignment in LLMs*, \*SEM 2026 ([paper](https://aclanthology.org/2026.starsem-conference.34/)). The judge design here — reasoning before verdict, interpretable rationale, stated confidence — comes from this work.
 - Mohammadi et al. — *Assessing the Reliability of LLM Annotations in the Context of Demographic Bias and Model Explanation*, GeBNLP @ ACL 2025 ([doi](https://doi.org/10.18653/v1/2025.gebnlp-1.9)). On treating a model's labels as measurements that need their own reliability estimate.
 
+## Citation
+
+If this benchmark is useful in your research, please cite it (see
+[CITATION.cff](CITATION.cff)):
+
+```bibtex
+@software{mohammadi_trajectory_judge,
+  author  = {Mohammadi, Hadi},
+  title   = {trajectory-judge: measuring what LLM judges miss when an agent reaches the right answer the wrong way},
+  url     = {https://github.com/mohammadi-hadi/trajectory-judge},
+  doi     = {10.5281/zenodo.21797926},
+  version = {0.1.0},
+  year    = {2026}
+}
+```
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
