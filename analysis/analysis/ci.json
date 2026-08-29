@@ -1,0 +1,590 @@
+{
+  "deltas": {
+    "outcome_loud_minus_silent": {
+      "hi": 0.482286,
+      "lo": 0.296,
+      "point": 0.388571
+    },
+    "selfcons_minus_step_ece": {
+      "hi": 0.071019,
+      "lo": 0.038992,
+      "point": 0.05134
+    },
+    "selfcons_minus_step_f1": {
+      "hi": 0.0,
+      "lo": -0.019551,
+      "point": -0.009443
+    },
+    "selfcons_minus_step_silent": {
+      "hi": 0.0,
+      "lo": -0.017143,
+      "point": -0.005714
+    },
+    "selfcons_minus_step_step_exact": {
+      "hi": 0.026966,
+      "lo": -0.007797,
+      "point": 0.009362
+    },
+    "selfcons_minus_step_type_f1": {
+      "hi": 0.035211,
+      "lo": -0.079197,
+      "point": -0.022919
+    },
+    "step_minus_outcome_silent": {
+      "hi": 0.388571,
+      "lo": 0.24,
+      "point": 0.314286
+    },
+    "step_minus_rules_silent": {
+      "hi": 0.371429,
+      "lo": 0.308571,
+      "point": 0.337143
+    }
+  },
+  "extras": {
+    "outcome:qwen2.5:14b": {
+      "step_scored_n": 0
+    },
+    "programmatic": {
+      "step_scored_n": 200
+    },
+    "selfcons3:qwen2.5:14b": {
+      "step_scored_n": 228
+    },
+    "step:llama3.1:8b": {
+      "step_scored_n": 275
+    },
+    "step:qwen2.5:14b": {
+      "step_scored_n": 223
+    }
+  },
+  "judges": {
+    "outcome:qwen2.5:14b": {
+      "brier": {
+        "hi": 0.317486,
+        "lo": 0.254532,
+        "method": "percentile",
+        "point": 0.28597
+      },
+      "ece": {
+        "hi": 0.294426,
+        "lo": 0.212174,
+        "method": "percentile",
+        "point": 0.2531
+      },
+      "f1": {
+        "hi": 0.749049,
+        "lo": 0.673552,
+        "method": "percentile",
+        "point": 0.711799
+      },
+      "false_alarm_rate": {
+        "hi": 0.43,
+        "lo": 0.24,
+        "method": "percentile",
+        "point": 0.33
+      },
+      "loud_recall": {
+        "hi": 0.896,
+        "lo": 0.776,
+        "method": "percentile",
+        "point": 0.84
+      },
+      "precision": {
+        "hi": 0.885714,
+        "lo": 0.810427,
+        "method": "percentile",
+        "point": 0.847926
+      },
+      "recall": {
+        "hi": 0.663333,
+        "lo": 0.566667,
+        "method": "percentile",
+        "point": 0.613333
+      },
+      "recall_hallucinated_argument": {
+        "hi": 0.48,
+        "lo": 0.22,
+        "method": "percentile",
+        "point": 0.34
+      },
+      "recall_ignored_observation": {
+        "hi": 0.88,
+        "lo": 0.64,
+        "method": "percentile",
+        "point": 0.76
+      },
+      "recall_premature_stop": {
+        "hi": 1.0,
+        "lo": 0.928878,
+        "method": "clopper-pearson",
+        "n": 50,
+        "point": 1.0
+      },
+      "recall_skipped_precondition": {
+        "hi": 0.86,
+        "lo": 0.62,
+        "method": "percentile",
+        "point": 0.74
+      },
+      "recall_unsupported_claim": {
+        "hi": 0.64,
+        "lo": 0.36,
+        "method": "percentile",
+        "point": 0.5
+      },
+      "recall_wrong_tool": {
+        "hi": 0.48,
+        "lo": 0.22,
+        "method": "percentile",
+        "point": 0.34
+      },
+      "silent_recall": {
+        "hi": 0.52,
+        "lo": 0.382857,
+        "method": "percentile",
+        "point": 0.451429
+      },
+      "type_f1": {
+        "hi": 0.329527,
+        "lo": 0.269392,
+        "method": "percentile",
+        "point": 0.299637
+      }
+    },
+    "programmatic": {
+      "brier": {
+        "hi": 0.13125,
+        "lo": 0.13125,
+        "method": "percentile",
+        "point": 0.13125
+      },
+      "ece": {
+        "hi": 0.075,
+        "lo": 0.075,
+        "method": "percentile",
+        "point": 0.075
+      },
+      "f1": {
+        "hi": 0.8,
+        "lo": 0.8,
+        "method": "percentile",
+        "point": 0.8
+      },
+      "false_alarm_rate": {
+        "hi": 0.036217,
+        "lo": 0.0,
+        "method": "clopper-pearson",
+        "n": 100,
+        "point": 0.0
+      },
+      "loud_recall": {
+        "hi": 1.0,
+        "lo": 0.97092,
+        "method": "clopper-pearson",
+        "n": 125,
+        "point": 1.0
+      },
+      "precision": {
+        "hi": 1.0,
+        "lo": 1.0,
+        "method": "percentile",
+        "point": 1.0
+      },
+      "recall": {
+        "hi": 0.666667,
+        "lo": 0.666667,
+        "method": "percentile",
+        "point": 0.666667
+      },
+      "recall_hallucinated_argument": {
+        "hi": 1.0,
+        "lo": 0.928878,
+        "method": "clopper-pearson",
+        "n": 50,
+        "point": 1.0
+      },
+      "recall_ignored_observation": {
+        "hi": 1.0,
+        "lo": 0.928878,
+        "method": "clopper-pearson",
+        "n": 50,
+        "point": 1.0
+      },
+      "recall_premature_stop": {
+        "hi": 1.0,
+        "lo": 0.928878,
+        "method": "clopper-pearson",
+        "n": 50,
+        "point": 1.0
+      },
+      "recall_skipped_precondition": {
+        "hi": 1.0,
+        "lo": 0.928878,
+        "method": "clopper-pearson",
+        "n": 50,
+        "point": 1.0
+      },
+      "recall_unsupported_claim": {
+        "hi": 0.071122,
+        "lo": 0.0,
+        "method": "clopper-pearson",
+        "n": 50,
+        "point": 0.0
+      },
+      "recall_wrong_tool": {
+        "hi": 0.071122,
+        "lo": 0.0,
+        "method": "clopper-pearson",
+        "n": 50,
+        "point": 0.0
+      },
+      "silent_recall": {
+        "hi": 0.428571,
+        "lo": 0.428571,
+        "method": "percentile",
+        "point": 0.428571
+      },
+      "step_exact": {
+        "hi": 1.0,
+        "lo": 0.981725,
+        "method": "clopper-pearson",
+        "n": 200,
+        "point": 1.0
+      },
+      "type_f1": {
+        "hi": 0.666667,
+        "lo": 0.666667,
+        "method": "percentile",
+        "point": 0.666667
+      }
+    },
+    "selfcons3:qwen2.5:14b": {
+      "brier": {
+        "hi": 0.119167,
+        "lo": 0.090833,
+        "method": "percentile",
+        "point": 0.105278
+      },
+      "ece": {
+        "hi": 0.104167,
+        "lo": 0.069167,
+        "method": "percentile",
+        "point": 0.084167
+      },
+      "f1": {
+        "hi": 0.926655,
+        "lo": 0.899452,
+        "method": "percentile",
+        "point": 0.913357
+      },
+      "false_alarm_rate": {
+        "hi": 0.03,
+        "lo": 0.0,
+        "method": "percentile",
+        "point": 0.01
+      },
+      "loud_recall": {
+        "hi": 0.992,
+        "lo": 0.92,
+        "method": "percentile",
+        "point": 0.96
+      },
+      "precision": {
+        "hi": 1.0,
+        "lo": 0.988,
+        "method": "percentile",
+        "point": 0.996063
+      },
+      "recall": {
+        "hi": 0.866667,
+        "lo": 0.82,
+        "method": "percentile",
+        "point": 0.843333
+      },
+      "recall_hallucinated_argument": {
+        "hi": 1.0,
+        "lo": 0.928878,
+        "method": "clopper-pearson",
+        "n": 50,
+        "point": 1.0
+      },
+      "recall_ignored_observation": {
+        "hi": 1.0,
+        "lo": 0.928878,
+        "method": "clopper-pearson",
+        "n": 50,
+        "point": 1.0
+      },
+      "recall_premature_stop": {
+        "hi": 0.98,
+        "lo": 0.8,
+        "method": "percentile",
+        "point": 0.9
+      },
+      "recall_skipped_precondition": {
+        "hi": 1.0,
+        "lo": 0.928878,
+        "method": "clopper-pearson",
+        "n": 50,
+        "point": 1.0
+      },
+      "recall_unsupported_claim": {
+        "hi": 0.26,
+        "lo": 0.06,
+        "method": "percentile",
+        "point": 0.16
+      },
+      "recall_wrong_tool": {
+        "hi": 1.0,
+        "lo": 0.928878,
+        "method": "clopper-pearson",
+        "n": 50,
+        "point": 1.0
+      },
+      "silent_recall": {
+        "hi": 0.788571,
+        "lo": 0.731429,
+        "method": "percentile",
+        "point": 0.76
+      },
+      "step_exact": {
+        "hi": 0.995671,
+        "lo": 0.965364,
+        "method": "percentile",
+        "point": 0.982456
+      },
+      "type_f1": {
+        "hi": 0.630955,
+        "lo": 0.532906,
+        "method": "percentile",
+        "point": 0.583432
+      }
+    },
+    "step:llama3.1:8b": {
+      "brier": {
+        "hi": 0.218031,
+        "lo": 0.202356,
+        "method": "percentile",
+        "point": 0.20945
+      },
+      "ece": {
+        "hi": 0.158,
+        "lo": 0.1395,
+        "method": "percentile",
+        "point": 0.14775
+      },
+      "f1": {
+        "hi": 0.857143,
+        "lo": 0.845599,
+        "method": "percentile",
+        "point": 0.852224
+      },
+      "false_alarm_rate": {
+        "hi": 1.0,
+        "lo": 0.963783,
+        "method": "clopper-pearson",
+        "n": 100,
+        "point": 1.0
+      },
+      "loud_recall": {
+        "hi": 1.0,
+        "lo": 0.97092,
+        "method": "clopper-pearson",
+        "n": 125,
+        "point": 1.0
+      },
+      "precision": {
+        "hi": 0.75,
+        "lo": 0.745547,
+        "method": "percentile",
+        "point": 0.748111
+      },
+      "recall": {
+        "hi": 1.0,
+        "lo": 0.976667,
+        "method": "percentile",
+        "point": 0.99
+      },
+      "recall_hallucinated_argument": {
+        "hi": 1.0,
+        "lo": 0.86,
+        "method": "percentile",
+        "point": 0.94
+      },
+      "recall_ignored_observation": {
+        "hi": 1.0,
+        "lo": 0.928878,
+        "method": "clopper-pearson",
+        "n": 50,
+        "point": 1.0
+      },
+      "recall_premature_stop": {
+        "hi": 1.0,
+        "lo": 0.928878,
+        "method": "clopper-pearson",
+        "n": 50,
+        "point": 1.0
+      },
+      "recall_skipped_precondition": {
+        "hi": 1.0,
+        "lo": 0.928878,
+        "method": "clopper-pearson",
+        "n": 50,
+        "point": 1.0
+      },
+      "recall_unsupported_claim": {
+        "hi": 1.0,
+        "lo": 0.928878,
+        "method": "clopper-pearson",
+        "n": 50,
+        "point": 1.0
+      },
+      "recall_wrong_tool": {
+        "hi": 1.0,
+        "lo": 0.928878,
+        "method": "clopper-pearson",
+        "n": 50,
+        "point": 1.0
+      },
+      "silent_recall": {
+        "hi": 1.0,
+        "lo": 0.96,
+        "method": "percentile",
+        "point": 0.982857
+      },
+      "step_exact": {
+        "hi": 0.833333,
+        "lo": 0.781481,
+        "method": "percentile",
+        "point": 0.807273
+      },
+      "type_f1": {
+        "hi": 0.347835,
+        "lo": 0.273184,
+        "method": "percentile",
+        "point": 0.311207
+      }
+    },
+    "step:qwen2.5:14b": {
+      "brier": {
+        "hi": 0.109909,
+        "lo": 0.084712,
+        "method": "percentile",
+        "point": 0.097351
+      },
+      "ece": {
+        "hi": 0.047938,
+        "lo": 0.0173,
+        "method": "percentile",
+        "point": 0.032827
+      },
+      "f1": {
+        "hi": 0.934281,
+        "lo": 0.911071,
+        "method": "percentile",
+        "point": 0.922801
+      },
+      "false_alarm_rate": {
+        "hi": 0.036217,
+        "lo": 0.0,
+        "method": "clopper-pearson",
+        "n": 100,
+        "point": 0.0
+      },
+      "loud_recall": {
+        "hi": 1.0,
+        "lo": 0.96,
+        "method": "percentile",
+        "point": 0.984
+      },
+      "precision": {
+        "hi": 1.0,
+        "lo": 1.0,
+        "method": "percentile",
+        "point": 1.0
+      },
+      "recall": {
+        "hi": 0.876667,
+        "lo": 0.836667,
+        "method": "percentile",
+        "point": 0.856667
+      },
+      "recall_hallucinated_argument": {
+        "hi": 1.0,
+        "lo": 0.928878,
+        "method": "clopper-pearson",
+        "n": 50,
+        "point": 1.0
+      },
+      "recall_ignored_observation": {
+        "hi": 1.0,
+        "lo": 0.928878,
+        "method": "clopper-pearson",
+        "n": 50,
+        "point": 1.0
+      },
+      "recall_premature_stop": {
+        "hi": 1.0,
+        "lo": 0.9,
+        "method": "percentile",
+        "point": 0.96
+      },
+      "recall_skipped_precondition": {
+        "hi": 1.0,
+        "lo": 0.928878,
+        "method": "clopper-pearson",
+        "n": 50,
+        "point": 1.0
+      },
+      "recall_unsupported_claim": {
+        "hi": 0.3,
+        "lo": 0.08,
+        "method": "percentile",
+        "point": 0.18
+      },
+      "recall_wrong_tool": {
+        "hi": 1.0,
+        "lo": 0.928878,
+        "method": "clopper-pearson",
+        "n": 50,
+        "point": 1.0
+      },
+      "silent_recall": {
+        "hi": 0.8,
+        "lo": 0.737143,
+        "method": "percentile",
+        "point": 0.765714
+      },
+      "step_exact": {
+        "hi": 0.99095,
+        "lo": 0.951754,
+        "method": "percentile",
+        "point": 0.973094
+      },
+      "type_f1": {
+        "hi": 0.65425,
+        "lo": 0.554366,
+        "method": "percentile",
+        "point": 0.606351
+      }
+    }
+  },
+  "meta": {
+    "B": 10000,
+    "cells": {
+      "clean": 100,
+      "hallucinated_argument-silent": 50,
+      "ignored_observation-loud": 50,
+      "premature_stop-loud": 50,
+      "skipped_precondition-loud": 25,
+      "skipped_precondition-silent": 25,
+      "unsupported_claim-silent": 50,
+      "wrong_tool-silent": 50
+    },
+    "method": "stratified paired percentile bootstrap",
+    "n_trajectories": 400,
+    "note": "one resample shared across all judges per replicate; degenerate proportions use exact Clopper-Pearson",
+    "seed": 20260829
+  }
+}
