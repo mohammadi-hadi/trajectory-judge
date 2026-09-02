@@ -269,7 +269,7 @@ questions and only the first one is answered here.
   construction, so a flag on a clean one is a false positive with nothing to argue about.
 - **Why stratify by outcome rather than report one recall?** Because a single number averages
   the blind spot away. The gap between 0.84 and 0.45 for the outcome judge is the entire result;
-  pooled, it would read as a respectable 0.68.
+  pooled, it would read as a respectable 0.61.
 - **Why does the judge get the procedure in its prompt?** A judge that has not been told the
   rules is guessing at policy. Both judges get the same standard operating procedure, word for
   word, so the only difference between them is how much of the trajectory they see. One
