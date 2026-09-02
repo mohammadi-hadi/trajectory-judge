@@ -8,6 +8,9 @@ identifiers:
   - type: doi
     value: 10.5281/zenodo.21797926
     description: Zenodo concept DOI (all versions)
+  - type: other
+    value: "arXiv:2609.00038"
+    description: arXiv preprint of the accompanying paper
 license: MIT
 repository-code: "https://github.com/mohammadi-hadi/trajectory-judge"
 url: "https://github.com/mohammadi-hadi/trajectory-judge"

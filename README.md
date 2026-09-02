@@ -332,6 +332,21 @@ If this benchmark is useful in your research, please cite it (see
 }
 ```
 
+The accompanying paper is on arXiv as
+[arXiv:2609.00038](https://arxiv.org/abs/2609.00038):
+
+```bibtex
+@misc{mohammadi2026trajectoryjudge,
+  author        = {Mohammadi, Hadi},
+  title         = {trajectory-judge: What Outcome-Only LLM Judges Miss on Agent Trajectories},
+  year          = {2026},
+  eprint        = {2609.00038},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CL},
+  url           = {https://arxiv.org/abs/2609.00038}
+}
+```
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
