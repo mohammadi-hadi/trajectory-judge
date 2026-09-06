@@ -11,11 +11,13 @@ because the outcome-only judge is cheap and its misses are by definition invisib
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, ClassVar
+
+import httpx
 
 from trajectory_judge.env.world import Instance
 from trajectory_judge.judges.base import Judge
-from trajectory_judge.judges.ollama_client import DEFAULT_HOST, generate
+from trajectory_judge.judges.ollama_client import DEFAULT_HOST, DEFAULT_TIMEOUT_S, generate
 from trajectory_judge.trace import FailureType, Trajectory, Verdict
 
 #: The procedure the agent was supposed to follow. A judge that has not been told the rules is
@@ -81,8 +83,10 @@ _CONFIDENCE_INSTRUCTION = (
 class LlmJudge(Judge):
     """Shared plumbing: build a prompt, generate under a schema, coerce to a verdict."""
 
-    schema: dict[str, Any] = STEP_SCHEMA
-    include_steps: bool = True
+    # ClassVar: these describe the subclass, and an instance attribute of the same name
+    # would silently shadow it for every other instance of that subclass.
+    schema: ClassVar[dict[str, Any]] = STEP_SCHEMA
+    include_steps: ClassVar[bool] = True
 
     def __init__(
         self,
@@ -92,11 +96,15 @@ class LlmJudge(Judge):
         temperature: float = 0.0,
         seed: int = 7,
         host: str = DEFAULT_HOST,
+        timeout_s: float = DEFAULT_TIMEOUT_S,
+        client: httpx.Client | None = None,
     ) -> None:
         self.model = model
         self.temperature = temperature
         self.seed = seed
         self.host = host
+        self.timeout_s = timeout_s
+        self.client = client
         self.judge_id = judge_id or f"{self.family}:{model}"
 
     @property
@@ -115,6 +123,8 @@ class LlmJudge(Judge):
             temperature=self.temperature,
             seed=self.seed,
             host=self.host,
+            timeout_s=self.timeout_s,
+            client=self.client,
         )
         verdict = Verdict(
             trajectory_id=trajectory.trajectory_id,
@@ -159,8 +169,8 @@ def _clamp(value: object) -> float:
 class OutcomeJudge(LlmJudge):
     """Sees the goal and the final answer. The production default, and the control condition."""
 
-    schema = OUTCOME_SCHEMA
-    include_steps = False
+    schema: ClassVar[dict[str, Any]] = OUTCOME_SCHEMA
+    include_steps: ClassVar[bool] = False
 
     @property
     def family(self) -> str:
@@ -196,8 +206,8 @@ Failure types:
 class StepRubricJudge(LlmJudge):
     """Sees every step. Asked to name where it went wrong, not only that it did."""
 
-    schema = STEP_SCHEMA
-    include_steps = True
+    schema: ClassVar[dict[str, Any]] = STEP_SCHEMA
+    include_steps: ClassVar[bool] = True
 
     @property
     def family(self) -> str:

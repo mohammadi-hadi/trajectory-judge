@@ -19,10 +19,12 @@ from __future__ import annotations
 
 from collections import Counter
 
+import httpx
+
 from trajectory_judge.env.world import Instance
 from trajectory_judge.judges.base import Judge
 from trajectory_judge.judges.llm import StepRubricJudge
-from trajectory_judge.judges.ollama_client import DEFAULT_HOST
+from trajectory_judge.judges.ollama_client import DEFAULT_HOST, DEFAULT_TIMEOUT_S
 from trajectory_judge.trace import Trajectory, Verdict
 
 
@@ -35,11 +37,20 @@ class SelfConsistencyJudge(Judge):
         temperature: float = 0.7,
         base_seed: int = 7,
         host: str = DEFAULT_HOST,
+        timeout_s: float = DEFAULT_TIMEOUT_S,
+        client: httpx.Client | None = None,
     ) -> None:
         self.k = k
         self.judge_id = f"selfcons{k}:{model}"
         self._members = [
-            StepRubricJudge(model, temperature=temperature, seed=base_seed + i, host=host)
+            StepRubricJudge(
+                model,
+                temperature=temperature,
+                seed=base_seed + i,
+                host=host,
+                timeout_s=timeout_s,
+                client=client,
+            )
             for i in range(k)
         ]
 
