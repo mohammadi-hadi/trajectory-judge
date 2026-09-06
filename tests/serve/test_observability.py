@@ -69,6 +69,26 @@ def test_metrics_count_the_request_and_resolve_a_slow_p99(client: TestClient, ba
     assert 'le="120.0"' in body
 
 
+def test_a_judged_request_is_counted_once_per_duration_metric(client: TestClient, backend) -> None:  # type: ignore[no-untyped-def]
+    """The edge histogram and the per-judge histogram must not both cover /v1/judge.
+
+    They used to share ``tj_request_duration_seconds``, the middleware writing ``judge="-"`` and
+    the handler writing the real name, so summing the rate across the judge label counted every
+    request twice.
+    """
+    client.post("/v1/judge", json=payload())
+    lines = client.get("/metrics").text.splitlines()
+
+    def total(metric: str) -> float:
+        return sum(
+            float(line.rsplit(" ", 1)[1]) for line in lines if line.startswith(f"{metric}_count{{")
+        )
+
+    assert total("tj_request_duration_seconds") == 1.0
+    assert total("tj_http_request_duration_seconds") == 1.0
+    assert 'judge="-"' not in "\n".join(lines)
+
+
 def test_a_rejected_request_is_counted_as_rejected(client: TestClient, backend) -> None:  # type: ignore[no-untyped-def]
     backend.error = "ConnectError: refused"
     client.post("/v1/judge", json=payload())

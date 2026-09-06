@@ -8,6 +8,13 @@ histogram has the opposite problem and is sized for the sub-millisecond range it
 ``tj_service_overhead_seconds`` carries the same labels as ``tj_request_duration_seconds`` so a
 dashboard can put them side by side. It is the number the load test reports, exported by the
 service itself, which is what makes that number checkable from outside.
+
+Two duration histograms, on purpose, because they answer different questions and summing them
+would double-count every judged request. ``tj_http_request_duration_seconds`` is the edge view:
+the middleware times every route, including the health probes, and has no judge label because
+most routes have no judge. ``tj_request_duration_seconds`` is the handler view, labelled by
+judge, and only the judging routes report it. Rate over the first for traffic, over the second
+for per-judge latency.
 """
 
 from __future__ import annotations
@@ -48,8 +55,15 @@ class Metrics:
         )
         self.duration = Histogram(
             "tj_request_duration_seconds",
-            "Wall-clock time per request.",
+            "Wall-clock time per judged request, by judge.",
             ["endpoint", "judge"],
+            buckets=REQUEST_BUCKETS,
+            registry=self.registry,
+        )
+        self.http_duration = Histogram(
+            "tj_http_request_duration_seconds",
+            "Wall-clock time per request, measured at the edge, every route.",
+            ["endpoint"],
             buckets=REQUEST_BUCKETS,
             registry=self.registry,
         )

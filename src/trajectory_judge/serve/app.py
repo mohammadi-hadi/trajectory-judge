@@ -102,7 +102,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         endpoint = getattr(route, "path", request.url.path)
         if endpoint != "/metrics":
             elapsed = time.perf_counter() - started
-            metrics.duration.labels(endpoint=endpoint, judge="-").observe(elapsed)
+            metrics.http_duration.labels(endpoint=endpoint).observe(elapsed)
             log.info(
                 "request",
                 extra={
