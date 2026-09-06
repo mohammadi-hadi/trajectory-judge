@@ -33,7 +33,9 @@ class MockJudge(Judge):
         self._inner = ProgrammaticJudge()
 
     def judge(self, trajectory: Trajectory, instance: Instance) -> Verdict:
-        verdict = self._inner.judge(trajectory, instance)
+        # A copy, not the rule engine's own object: mutating the inner verdict would hand a
+        # caller that holds both a surprise, and the two judges are meant to be comparable.
+        verdict = self._inner.judge(trajectory, instance).model_copy()
         verdict.judge_id = self.judge_id
 
         if _unit(trajectory.trajectory_id, "flip") < self.noise:
