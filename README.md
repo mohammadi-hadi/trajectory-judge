@@ -90,6 +90,97 @@ what is already on disk. `make report` never calls a model — it rebuilds the t
 from the raw verdicts committed in this repository, so every number below can be reproduced
 without running anything.
 
+## Serving
+
+The judges also run as an HTTP service, in the same image:
+
+```bash
+docker run --rm -p 8000:8000 ghcr.io/mohammadi-hadi/trajectory-judge serve
+```
+
+`compose.yaml` brings up Ollama alongside it. From a clone, `pip install -e ".[serve]"` and
+`trajectory-judge serve`. The rule judge needs no model at all:
+
+```bash
+curl -s localhost:8000/v1/judge -H 'content-type: application/json' -d '{
+  "judge": "programmatic",
+  "trajectory": {"goal": "refund ORD-1", "steps": [], "final_answer": "done"},
+  "context": {"given": {"order_id": "ORD-1"},
+              "order": {"customer_id": "C-1", "status": "delivered"}}}'
+```
+
+```json
+{"request_id": "9f2c...",
+ "verdict": {"judge_id": "programmatic", "faulty": true, "failure_step": 0,
+             "failure_type": "premature_stop", "confidence": 0.95, "rationale": "..."},
+ "usage": {"prompt_tokens": 0, "completion_tokens": 0, "upstream_calls": 0},
+ "timing": {"total_s": 0.0012, "model_s": 0.0, "queue_wait_s": 0.0, "overhead_s": 0.0012}}
+```
+
+| method | path | what it does |
+|---|---|---|
+| GET | `/healthz` | liveness; reports the build's commit, since the version is pinned |
+| GET | `/readyz` | readiness; 503 when the model backend is unreachable |
+| GET | `/v1/judges` | the catalogue: what each judge needs and how many model calls it costs |
+| GET | `/v1/models` | what the backend reports; 200 even when it is down |
+| POST | `/v1/judge` | one trajectory, one judge |
+| POST | `/v1/judge/batch` | up to 64, with bounded concurrency and per-item statuses |
+| GET | `/metrics` | Prometheus exposition |
+
+Configuration is `TJ_`-prefixed, plus `OLLAMA_HOST`:
+
+| variable | default | meaning |
+|---|---|---|
+| `TJ_ENABLED_JUDGES` | all five | which judges this deployment offers |
+| `TJ_DEFAULT_MODEL` | `qwen2.5:14b` | model used when a request names none |
+| `TJ_MAX_CONCURRENCY` | 4 | judgements in flight; above that, requests queue |
+| `TJ_QUEUE_TIMEOUT_S` | 5 | how long a request waits for a slot before 429 |
+| `TJ_UPSTREAM_TIMEOUT_S` | 60 | read timeout for one model call |
+| `TJ_MAX_STEPS` / `TJ_MAX_BATCH` | 100 / 64 | request size limits |
+| `TJ_LOG_LEVEL` | `info` | logs are one JSON object per line |
+
+### Two things it does on purpose
+
+**The API cannot be told the answer.** `TrajectoryIn` has no `label` field and `JudgeContext` has
+no `expected`, and both reject unknown fields, so posting ground truth is a 422 rather than a
+silent drop. An evaluation service that can physically receive the answer is one refactor away
+from leaking it into a score.
+
+**A judge that produced nothing is not a success.** `Judge.judge` never raises: when the backend
+is unreachable it returns a valid verdict with `error` set and confidence 0.5, which is the right
+answer for a benchmark that needs the row. Serving that as 200 would report full availability
+while judging nothing, so the service inspects the verdict and maps it: 503 when the backend is
+unreachable, 504 on a timeout, 502 when the model answers with something that is not a verdict.
+Read timeouts are not retried, because the model is probably still working and a retry doubles
+the load on the bottleneck.
+
+### What it costs
+
+Full method and tables in [bench/README.md](bench/README.md). Two measurements are kept apart:
+service overhead is measured against a stand-in backend that sleeps a known 250 ms, so what is
+left is this service's own cost; a small real-model sample is reported separately, because its
+p99 belongs to qwen2.5:14b and not to this server.
+
+<!-- BENCH:START -->
+| scenario | upstream | conc. | p50 | p99 | rps | errors | service overhead p99 |
+|---|---|---:|---:|---:|---:|---:|---:|
+| `floor` | none | 1 | 1.0 ms | 1.5 ms | 950 | 0.000 | 0.13 ms |
+| `rules` | none | 1 | 1.0 ms | 1.5 ms | 930 | 0.000 | 0.18 ms |
+| `pooled` | fake 250ms | 8 | 255.0 ms | 264.4 ms | 31 | 0.000 | 0.81 ms |
+| `degraded` | fake 250ms | 8 | 254.5 ms | 2008.8 ms | 15 | 0.125 | 1.42 ms |
+| `overload` | fake 250ms | 32 | 403.2 ms | 646.8 ms | 65 | 0.760 | 4.69 ms |
+
+Every row above runs against a stand-in backend with a known, fixed latency, so the last column is this service's own cost rather than a model's.
+
+Measured on MacBook Pro (Apple M-series), macOS, local loopback, commit `dcbd8dd9fdce`.
+<!-- BENCH:END -->
+
+Throughput scales linearly with concurrency up to `TJ_MAX_CONCURRENCY` and then flattens while
+latency grows, which is the semaphore working: past its limit, extra load becomes queue time
+rather than work. Ollama serialises per loaded model unless `OLLAMA_NUM_PARALLEL` says otherwise,
+so setting `TJ_MAX_CONCURRENCY` above that number moves the queue somewhere without a metric
+rather than adding capacity.
+
 ## The environment
 
 A support desk with seven tools (`get_customer`, `lookup_order`, `get_policy`,
