@@ -13,10 +13,9 @@ permissions:
 
 jobs:
   smoke:
-    # Build and actually run the image on pull requests. Publishing only happened on main, so
-    # a Dockerfile that no longer builds used to land before anyone noticed. amd64 only: no
-    # QEMU, so this stays fast enough to sit on every PR.
-    if: github.event_name == 'pull_request'
+    # Build the image and actually run it, on every event. Publishing used to be the only
+    # thing that built it, so a Dockerfile that no longer worked reached the registry before
+    # anyone noticed. amd64 only, no QEMU, so this stays fast enough to gate the publish.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -66,6 +65,8 @@ jobs:
         run: docker rm -f judge || true
 
   publish:
+    # Only a container that served a request gets published.
+    needs: smoke
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
