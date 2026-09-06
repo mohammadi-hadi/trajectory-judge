@@ -50,6 +50,20 @@ Throughput climbs with concurrency to 31 requests per second and then stops. The
 
 At concurrency 32 against a limit of 4, 152 of 200 requests were refused with 429 and a `Retry-After` rather than queued without bound.
 
+## A real model, for scale
+
+MacBook Pro (Apple M-series), macOS, local Ollama, qwen2.5:14b. This is a small sample and it is here to show the ratio, not to characterise the model.
+
+| conc. | n | p50 (s) | p95 (s) | p99 (s) | model p50 (s) | rps | overhead p50 (ms) | overhead p99 (ms) | overhead share |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 30 | 7.9 | 16.9 | 19.9 | 7.9 | 0.11 | 0.23 | 4.50 | 0.0029% |
+| 2 | 30 | 13.3 | 14.3 | 14.5 | 13.3 | 0.15 | 0.21 | 0.57 | 0.0016% |
+| 4 | 30 | 24.7 | 26.0 | 26.0 | 24.7 | 0.16 | 0.21 | 0.58 | 0.0008% |
+
+The latency in that table is a property of the model on that machine, not of this service. The service's own contribution is the overhead columns, and at 0.0008% of the total it is not what anyone waiting on this endpoint is waiting for.
+
+The concurrency column is the useful part. Going from 1 to 4 concurrent requests multiplies latency by 3.1x (7.9s to 24.7s) and moves throughput from 0.11 to only 0.16 requests per second. Ollama serialises per loaded model unless `OLLAMA_NUM_PARALLEL` says otherwise, so offering it more concurrency buys queue time rather than capacity. That is the measurement behind the rule `TJ_MAX_CONCURRENCY = OLLAMA_NUM_PARALLEL`.
+
 ## Method
 
 - Closed loop: N workers each send one request and wait, so the reported quantity is latency at concurrency N and throughput is derived from it rather than targeted. There is no coordinated omission to correct for.

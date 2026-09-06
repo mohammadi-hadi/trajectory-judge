@@ -169,8 +169,9 @@ p99 belongs to qwen2.5:14b and not to this server.
 | `pooled` | fake 250ms | 8 | 255.0 ms | 264.4 ms | 31 | 0.000 | 0.81 ms |
 | `degraded` | fake 250ms | 8 | 254.5 ms | 2008.8 ms | 15 | 0.125 | 1.42 ms |
 | `overload` | fake 250ms | 32 | 403.2 ms | 646.8 ms | 65 | 0.760 | 4.69 ms |
+| `real` | ollama qwen2.5:14b | 1 | 7.9 s | 19.9 s | 0.11 | 0.000 | 4.50 ms |
 
-Every row above runs against a stand-in backend with a known, fixed latency, so the last column is this service's own cost rather than a model's.
+The `real` row's latency belongs to qwen2.5:14b on that machine. This service's own contribution is the last column, and it is the same order of magnitude in every row above it.
 
 Measured on MacBook Pro (Apple M-series), macOS, local loopback, commit `dcbd8dd9fdce`.
 <!-- BENCH:END -->

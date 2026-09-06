@@ -154,22 +154,40 @@ def render(overhead: dict[str, Any], real: dict[str, Any] | None) -> str:
             f"{renv['label']}, {real['model']}. This is a small sample and it is here to show "
             "the ratio, not to characterise the model.",
             "",
-            "| conc. | n | p50 | p95 | p99 | model p50 | overhead p50 | overhead p99 |",
-            "|---:|---:|---:|---:|---:|---:|---:|---:|",
+            "| conc. | n | p50 (s) | p95 (s) | p99 (s) | model p50 (s) | rps |"
+            " overhead p50 (ms) | overhead p99 (ms) | overhead share |",
+            "|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
         ]
         for s in real["scenarios"]:
+            share = s["overhead_p50_ms"] / s["p50_ms"] if s["p50_ms"] else 0.0
             lines.append(
-                f"| {s['concurrency']} | {s['n']} | {s['p50_ms']:.0f} | {s['p95_ms']:.0f} | "
-                f"{s['p99_ms']:.0f} | {s['model_ms_p50']:.0f} | {s['overhead_p50_ms']:.2f} | "
-                f"{s['overhead_p99_ms']:.2f} |"
+                f"| {s['concurrency']} | {s['n']} | {s['p50_ms'] / 1000:.1f} | "
+                f"{s['p95_ms'] / 1000:.1f} | {s['p99_ms'] / 1000:.1f} | "
+                f"{s['model_ms_p50'] / 1000:.1f} | {s['rps']:.2f} | "
+                f"{s['overhead_p50_ms']:.2f} | {s['overhead_p99_ms']:.2f} | {share:.4%} |"
             )
         lines += [
             "",
-            "The p99 in that table is a property of the model on that machine, not of this "
-            "service. The service's own contribution is the last two columns, and it is the "
-            "same order of magnitude as in every row above.",
+            "The latency in that table is a property of the model on that machine, not of this "
+            "service. The service's own contribution is the overhead columns, and at "
+            f"{min(s['overhead_p50_ms'] / s['p50_ms'] for s in real['scenarios']):.4%} of the "
+            "total it is not what anyone waiting on this endpoint is waiting for.",
             "",
         ]
+        if len(real["scenarios"]) > 1:
+            first, last = real["scenarios"][0], real["scenarios"][-1]
+            lines += [
+                f"The concurrency column is the useful part. Going from {first['concurrency']} "
+                f"to {last['concurrency']} concurrent requests multiplies latency by "
+                f"{last['p50_ms'] / first['p50_ms']:.1f}x "
+                f"({first['p50_ms'] / 1000:.1f}s to {last['p50_ms'] / 1000:.1f}s) and moves "
+                f"throughput from {first['rps']:.2f} to only {last['rps']:.2f} requests per "
+                "second. Ollama serialises per loaded model unless `OLLAMA_NUM_PARALLEL` says "
+                "otherwise, so offering it more concurrency buys queue time rather than "
+                "capacity. That is the measurement behind the rule `TJ_MAX_CONCURRENCY = "
+                "OLLAMA_NUM_PARALLEL`.",
+                "",
+            ]
 
     lines += [
         "## Method",
