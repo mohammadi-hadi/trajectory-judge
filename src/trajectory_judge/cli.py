@@ -171,9 +171,7 @@ def serve() -> None:
     try:
         from trajectory_judge.serve.app import run
     except ImportError:
-        typer.echo(
-            "serve needs the 'serve' extra: pip install 'trajectory-judge[serve]'", err=True
-        )
+        typer.echo("serve needs the 'serve' extra: pip install 'trajectory-judge[serve]'", err=True)
         raise typer.Exit(1) from None
 
     run()

@@ -48,6 +48,9 @@ from trajectory_judge.trace import Verdict
 log = logging.getLogger("trajectory_judge.serve")
 router = APIRouter()
 
+#: Batch items are judged through the same path, so they share the endpoint label.
+ENDPOINT_JUDGE = "/v1/judge"
+
 
 def _runtime(request: Request) -> Runtime:
     runtime: Runtime = request.app.state.runtime
@@ -185,7 +188,15 @@ async def run_one(runtime: Runtime, payload: JudgeRequest, request_id: str) -> J
         metrics.upstream_errors.labels(judge=payload.judge, model=model, kind=failure.code).inc()
         raise ServiceError(failure, payload.judge)
 
+    overhead = max(0.0, total - verdict.latency_s - queue_wait)
     metrics.upstream.labels(judge=payload.judge, model=model).observe(verdict.latency_s)
+    metrics.duration.labels(endpoint=ENDPOINT_JUDGE, judge=payload.judge).observe(total)
+    # The headline number of the load test, exported by the service itself so the claim in
+    # the README can be checked from outside with a scrape.
+    metrics.overhead.labels(endpoint=ENDPOINT_JUDGE, judge=payload.judge).observe(overhead)
+    metrics.requests.labels(
+        endpoint=ENDPOINT_JUDGE, judge=payload.judge, status="200", outcome="ok"
+    ).inc()
     token_counts = (("prompt", verdict.prompt_tokens), ("completion", verdict.completion_tokens))
     for kind, count in token_counts:
         if count:
@@ -211,7 +222,7 @@ async def run_one(runtime: Runtime, payload: JudgeRequest, request_id: str) -> J
             total_s=total,
             model_s=verdict.latency_s,
             queue_wait_s=queue_wait,
-            overhead_s=max(0.0, total - verdict.latency_s - queue_wait),
+            overhead_s=overhead,
         ),
     )
 

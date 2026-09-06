@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import httpx
 import pytest
-from conftest import FakeGenerate, verdict_json
+from helpers_llm import FakeGenerate, verdict_json
 
 from trajectory_judge.judges.llm import OutcomeJudge, StepRubricJudge
 from trajectory_judge.judges.ollama_client import generate
