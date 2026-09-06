@@ -1,0 +1,54 @@
+# The service and a model backend, for running it the way it is meant to run.
+#
+#   docker compose up -d
+#   docker compose exec ollama ollama pull qwen2.5:14b   # ~9 GB, once
+#   curl localhost:8000/readyz
+#
+# Pulling the model stays a manual step: baking 9 GB into an init container is a worse
+# default than one command, and the rule judges work without it.
+services:
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama-models:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  judge:
+    build:
+      context: .
+      args:
+        TJ_GIT_SHA: ${TJ_GIT_SHA:-unknown}
+    command: ["serve"]
+    ports:
+      - "8000:8000"
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      # Ollama serialises per loaded model unless OLLAMA_NUM_PARALLEL says otherwise, so
+      # admitting more than it can run just moves the queue somewhere with no metric.
+      TJ_MAX_CONCURRENCY: "4"
+      TJ_UPSTREAM_TIMEOUT_S: "60"
+      TJ_LOG_LEVEL: info
+    depends_on:
+      ollama:
+        condition: service_healthy
+    healthcheck:
+      # python:3.12-slim ships no curl.
+      test:
+        - CMD
+        - python
+        - -c
+        - |
+          import sys, urllib.request
+          sys.exit(0 if urllib.request.urlopen("http://127.0.0.1:8000/healthz", timeout=2).status == 200 else 1)
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 5s
+
+volumes:
+  ollama-models:
