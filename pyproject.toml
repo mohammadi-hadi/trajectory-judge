@@ -73,4 +73,11 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q"
+# Network tests are opt-in (`pytest -m network`), so `make test` keeps its promise: no model,
+# no network, a fraction of a second.
+addopts = "-q -m 'not network'"
+markers = [
+  "serve: needs the serve extra installed",
+  "network: needs a live Ollama on OLLAMA_HOST",
+  "slow: takes more than a second",
+]
