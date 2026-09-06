@@ -123,8 +123,8 @@ def render(overhead: dict[str, Any], real: dict[str, Any] | None) -> str:
                 f"requests per second and then stops. The knee is at concurrency "
                 f"{knee['concurrency']}, where p99 reaches {knee['p99_ms']:.0f} ms against "
                 f"{base['p99_ms']:.0f} ms at concurrency 1 while throughput no longer improves. "
-                "That is the semaphore doing its job: past its limit, extra load becomes queue "
-                "time rather than work.",
+                "That is the semaphore doing its job: past its limit, extra load turns into queue "
+                "time.",
                 "",
             ]
 
@@ -137,8 +137,8 @@ def render(overhead: dict[str, Any], real: dict[str, Any] | None) -> str:
             "",
             f"At concurrency {o['concurrency']} against a limit of 4, "
             + (
-                f"{rejected} of {o['n']} requests were refused with 429 and a `Retry-After` "
-                "rather than queued without bound."
+                f"{rejected} of {o['n']} requests were refused with 429 and a `Retry-After`, "
+                "so the queue stayed bounded."
                 if rejected
                 else f"all {o['n']} requests were served, queued behind the semaphore "
                 f"(p50 {o['p50_ms']:.0f} ms). Nothing was dropped."
@@ -177,13 +177,13 @@ def render(overhead: dict[str, Any], real: dict[str, Any] | None) -> str:
         if len(real["scenarios"]) > 1:
             first, last = real["scenarios"][0], real["scenarios"][-1]
             lines += [
-                f"The concurrency column is the useful part. Going from {first['concurrency']} "
+                f"Now the concurrency column. Going from {first['concurrency']} "
                 f"to {last['concurrency']} concurrent requests multiplies latency by "
                 f"{last['p50_ms'] / first['p50_ms']:.1f}x "
                 f"({first['p50_ms'] / 1000:.1f}s to {last['p50_ms'] / 1000:.1f}s) and moves "
                 f"throughput from {first['rps']:.2f} to only {last['rps']:.2f} requests per "
                 "second. Ollama serialises per loaded model unless `OLLAMA_NUM_PARALLEL` says "
-                "otherwise, so offering it more concurrency buys queue time rather than "
+                "otherwise, so offering it more concurrency buys queue time and no extra "
                 "capacity. That is the measurement behind the rule `TJ_MAX_CONCURRENCY = "
                 "OLLAMA_NUM_PARALLEL`.",
                 "",
@@ -193,7 +193,7 @@ def render(overhead: dict[str, Any], real: dict[str, Any] | None) -> str:
         "## Method",
         "",
         "- Closed loop: N workers each send one request and wait, so the reported quantity is "
-        "latency at concurrency N and throughput is derived from it rather than targeted. "
+        "latency at concurrency N, with throughput derived from it and never targeted. "
         "There is no coordinated omission to correct for.",
         "- Percentiles are nearest-rank on the sorted sample. Raw per-request timings are kept "
         "in the JSON whenever there are 2000 or fewer, so every number here can be recomputed "

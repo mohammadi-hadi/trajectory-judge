@@ -44,11 +44,11 @@ In `degraded` the injected tenth comes back as a timeout, not a crash: 25 answer
 
 ### Saturation
 
-Throughput climbs with concurrency to 31 requests per second and then stops. The knee is at concurrency 16, where p99 reaches 522 ms against 254 ms at concurrency 1 while throughput no longer improves. That is the semaphore doing its job: past its limit, extra load becomes queue time rather than work.
+Throughput climbs with concurrency to 31 requests per second and then stops. The knee is at concurrency 16, where p99 reaches 522 ms against 254 ms at concurrency 1 while throughput no longer improves. That is the semaphore doing its job: past its limit, extra load turns into queue time.
 
 ### Backpressure
 
-At concurrency 32 against a limit of 4, 152 of 200 requests were refused with 429 and a `Retry-After` rather than queued without bound.
+At concurrency 32 against a limit of 4, 152 of 200 requests were refused with 429 and a `Retry-After`, so the queue stayed bounded.
 
 ## A real model, for scale
 
@@ -62,11 +62,11 @@ MacBook Pro (Apple M-series), macOS, local Ollama, qwen2.5:14b. This is a small 
 
 The latency in that table is a property of the model on that machine, not of this service. The service's own contribution is the overhead columns, and at 0.0008% of the total it is not what anyone waiting on this endpoint is waiting for.
 
-The concurrency column is the useful part. Going from 1 to 4 concurrent requests multiplies latency by 3.1x (7.9s to 24.7s) and moves throughput from 0.11 to only 0.16 requests per second. Ollama serialises per loaded model unless `OLLAMA_NUM_PARALLEL` says otherwise, so offering it more concurrency buys queue time rather than capacity. That is the measurement behind the rule `TJ_MAX_CONCURRENCY = OLLAMA_NUM_PARALLEL`.
+Now the concurrency column. Going from 1 to 4 concurrent requests multiplies latency by 3.1x (7.9s to 24.7s) and moves throughput from 0.11 to only 0.16 requests per second. Ollama serialises per loaded model unless `OLLAMA_NUM_PARALLEL` says otherwise, so offering it more concurrency buys queue time and no extra capacity. That is the measurement behind the rule `TJ_MAX_CONCURRENCY = OLLAMA_NUM_PARALLEL`.
 
 ## Method
 
-- Closed loop: N workers each send one request and wait, so the reported quantity is latency at concurrency N and throughput is derived from it rather than targeted. There is no coordinated omission to correct for.
+- Closed loop: N workers each send one request and wait, so the reported quantity is latency at concurrency N, with throughput derived from it and never targeted. There is no coordinated omission to correct for.
 - Percentiles are nearest-rank on the sorted sample. Raw per-request timings are kept in the JSON whenever there are 2000 or fewer, so every number here can be recomputed by hand.
 - A warmup request is discarded before each scenario.
 - Regenerate with `python bench/scenarios.py --label "<machine>"`, then `python bench/render.py`. CI runs `--check`, which re-renders from the committed JSON and fails on any difference.
