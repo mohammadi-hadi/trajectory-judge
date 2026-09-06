@@ -30,7 +30,16 @@ DOI = "https://doi.org/10.5281/zenodo.21797926"
 
 [project.optional-dependencies]
 report = ["matplotlib>=3.8"]
+# Plain uvicorn, not uvicorn[standard]: the latter pulls uvloop, httptools and watchfiles,
+# all C extensions, which would cost the 3.14 lane of the test matrix. The hot path here is a
+# blocking model call parked in a worker thread, so a faster event loop buys nothing.
+serve = [
+  "fastapi>=0.115",
+  "uvicorn>=0.30",
+  "prometheus-client>=0.20",
+]
 dev = [
+  "trajectory-judge[serve]",
   "pytest>=8.0",
   "ruff>=0.5",
   "mypy>=1.10",
