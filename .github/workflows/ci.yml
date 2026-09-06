@@ -63,8 +63,8 @@ jobs:
           if /tmp/wheel-env/bin/trajectory-judge serve 2>/tmp/serve-err; then
             echo "expected a non-zero exit without the serve extra"; exit 1
           fi
-          grep -q "serve extra" /tmp/serve-err
-          test ! -s /tmp/serve-traceback || true
+          cat /tmp/serve-err
+          grep -qF "trajectory-judge[serve]" /tmp/serve-err
           if grep -q "Traceback" /tmp/serve-err; then
             echo "serve raised instead of explaining:"; cat /tmp/serve-err; exit 1
           fi
