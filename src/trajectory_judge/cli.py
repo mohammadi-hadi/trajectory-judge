@@ -161,5 +161,23 @@ def report(
         typer.echo("figures skipped: install the 'report' extra for matplotlib", err=True)
 
 
+@app.command()
+def serve() -> None:
+    """Serve the judges over HTTP. Needs the 'serve' extra.
+
+    uvicorn is imported inside the body, the same way `report` imports matplotlib, so
+    `trajectory-judge --help` keeps working on an install without the extra.
+    """
+    try:
+        from trajectory_judge.serve.app import run
+    except ImportError:
+        typer.echo(
+            "serve needs the 'serve' extra: pip install 'trajectory-judge[serve]'", err=True
+        )
+        raise typer.Exit(1) from None
+
+    run()
+
+
 if __name__ == "__main__":
     app()
