@@ -58,8 +58,13 @@ def generate(
     host: str = DEFAULT_HOST,
     num_ctx: int = DEFAULT_NUM_CTX,
     timeout_s: float = DEFAULT_TIMEOUT_S,
+    client: httpx.Client | None = None,
 ) -> Generation:
-    """Call Ollama once. Never raises — transport failures come back as ``error``."""
+    """Call Ollama once. Never raises — transport failures come back as ``error``.
+
+    Pass ``client`` to reuse a connection pool. Without one every call opens a fresh TCP
+    connection, which is fine for a batch run and wasteful under a server.
+    """
     payload = {
         "model": model,
         "prompt": prompt,
@@ -68,8 +73,9 @@ def generate(
         "options": {"temperature": temperature, "seed": seed, "num_ctx": num_ctx},
     }
     started = time.perf_counter()
+    post = httpx.post if client is None else client.post
     try:
-        response = httpx.post(f"{host}/api/generate", json=payload, timeout=timeout_s)
+        response = post(f"{host}/api/generate", json=payload, timeout=timeout_s)
         response.raise_for_status()
         body = response.json()
     except (httpx.HTTPError, json.JSONDecodeError) as exc:
@@ -85,9 +91,10 @@ def generate(
     )
 
 
-def is_available(host: str = DEFAULT_HOST) -> bool:
+def is_available(host: str = DEFAULT_HOST, client: httpx.Client | None = None) -> bool:
     """Whether an Ollama server is reachable. Used to skip model tests, never to hide errors."""
+    get = httpx.get if client is None else client.get
     try:
-        return httpx.get(f"{host}/api/tags", timeout=2.0).status_code == 200
+        return get(f"{host}/api/tags", timeout=2.0).status_code == 200
     except httpx.HTTPError:
         return False
