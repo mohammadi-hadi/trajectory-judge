@@ -16,6 +16,7 @@ results/figures are not.
 from __future__ import annotations
 
 import argparse
+import itertools
 import json
 import sys
 from pathlib import Path
@@ -88,7 +89,8 @@ def render(overhead: dict[str, Any], real: dict[str, Any] | None) -> str:
     if degraded and pooled8:
         d, p = degraded[0], pooled8[0]
         failures = ", ".join(
-            f"{count} answered {code}" for code, count in sorted(d["status_counts"].items())
+            f"{count} answered {code}"
+            for code, count in sorted(d["status_counts"].items())
             if code != "200"
         )
         lines += [
@@ -105,7 +107,7 @@ def render(overhead: dict[str, Any], real: dict[str, Any] | None) -> str:
     if len(pooled) > 1:
         base = pooled[0]
         knee = None
-        for previous, current in zip(pooled, pooled[1:], strict=False):
+        for previous, current in itertools.pairwise(pooled):
             doubled = current["p99_ms"] > 2 * base["p99_ms"]
             flat = current["rps"] < previous["rps"] * 1.05
             if doubled or flat:

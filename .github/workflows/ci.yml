@@ -57,6 +57,17 @@ jobs:
           /tmp/wheel-env/bin/trajectory-judge --help
           /tmp/wheel-env/bin/trajectory-judge run --n 12 --judges mock,programmatic --seed 7 --out /tmp/pkg-demo
           /tmp/wheel-env/bin/trajectory-judge report --raw /tmp/pkg-demo --out /tmp/pkg-demo
+      - name: Without the serve extra, serve explains itself instead of raising
+        # The bare wheel has no fastapi, so this asserts the message rather than a traceback.
+        run: |
+          if /tmp/wheel-env/bin/trajectory-judge serve 2>/tmp/serve-err; then
+            echo "expected a non-zero exit without the serve extra"; exit 1
+          fi
+          grep -q "serve extra" /tmp/serve-err
+          test ! -s /tmp/serve-traceback || true
+          if grep -q "Traceback" /tmp/serve-err; then
+            echo "serve raised instead of explaining:"; cat /tmp/serve-err; exit 1
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: dist
@@ -81,3 +92,22 @@ jobs:
           fi
           trajectory-judge report --raw results/raw --out results
           git diff --exit-code -- results/tables
+
+  bench:
+    # Not a performance gate. The ceilings sit roughly an order of magnitude above what is
+    # observed, so this catches "someone put a blocking call in the request path", not a 15%
+    # regression, which no shared runner could measure honestly anyway.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -e ".[dev]"
+      - name: Run a short sweep against the fake backend
+        run: python bench/scenarios.py --quick --label "github runner" --out /tmp/bench.json
+      - name: Assert the invariants
+        run: python bench/check_invariants.py /tmp/bench.json
+      - name: The committed table still matches the committed numbers
+        run: python bench/render.py --check

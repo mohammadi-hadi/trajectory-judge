@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     tags: ["v*"]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -11,7 +12,61 @@ permissions:
   packages: write
 
 jobs:
+  smoke:
+    # Build and actually run the image on pull requests. Publishing only happened on main, so
+    # a Dockerfile that no longer builds used to land before anyone noticed. amd64 only: no
+    # QEMU, so this stays fast enough to sit on every PR.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: trajectory-judge:pr
+          build-args: TJ_GIT_SHA=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: The default entrypoint still runs the demo
+        run: docker run --rm trajectory-judge:pr run --n 8 --judges mock --out /tmp/d --seed 7
+      - name: Serve, and answer a request that needs no model
+        run: |
+          docker run -d --name judge -p 8000:8000 \
+            -e TJ_ENABLED_JUDGES=programmatic,mock trajectory-judge:pr serve
+          for _ in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8000/healthz && break || sleep 1
+          done
+          curl -fsS http://127.0.0.1:8000/healthz | tee /tmp/health.json
+          grep -q '"git_sha": *"${{ github.sha }}"' /tmp/health.json \
+            || { echo "healthz did not report the build sha"; cat /tmp/health.json; exit 1; }
+          curl -fsS http://127.0.0.1:8000/readyz
+          curl -fsS -X POST http://127.0.0.1:8000/v1/judge \
+            -H 'content-type: application/json' \
+            -d '{"trajectory":{"goal":"refund ORD-1","steps":[],"final_answer":"done"},
+                 "judge":"programmatic",
+                 "context":{"given":{"order_id":"ORD-1"},
+                            "order":{"customer_id":"C-1","status":"delivered"}}}' \
+            | tee /tmp/verdict.json
+          grep -q '"judge_id"' /tmp/verdict.json
+      - name: Logs are line-delimited JSON
+        run: |
+          docker logs judge > /tmp/logs.txt 2>&1
+          test -s /tmp/logs.txt || { echo "the service logged nothing at all"; exit 1; }
+          while read -r line; do
+            [ -z "$line" ] && continue
+            echo "$line" | python3 -c "import json,sys; json.loads(sys.stdin.read())" \
+              || { echo "not JSON: $line"; exit 1; }
+          done < /tmp/logs.txt
+      - name: Stop
+        if: always()
+        run: docker rm -f judge || true
+
   publish:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,6 +93,7 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
+          build-args: TJ_GIT_SHA=${{ github.sha }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
