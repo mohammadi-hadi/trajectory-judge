@@ -316,6 +316,12 @@ questions and only the first one is answered here.
 - Mohammadi et al. — *EvalMORAAL: Interpretable Chain-of-Thought and LLM-as-Judge Evaluation for Moral Alignment in LLMs*, \*SEM 2026 ([paper](https://aclanthology.org/2026.starsem-conference.34/)). The judge design here — reasoning before verdict, interpretable rationale, stated confidence — comes from this work.
 - Mohammadi et al. — *Assessing the Reliability of LLM Annotations in the Context of Demographic Bias and Model Explanation*, GeBNLP @ ACL 2025 ([doi](https://doi.org/10.18653/v1/2025.gebnlp-1.9)). On treating a model's labels as measurements that need their own reliability estimate.
 
+## Part of evalstack
+
+[evalstack](https://github.com/mohammadi-hadi/evalstack) is the map of these
+eleven evaluation tools: what each one measures, what it found on real data,
+and the two chains that run end to end.
+
 ## Citation
 
 If this benchmark is useful in your research, please cite it (see
