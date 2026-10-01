@@ -61,8 +61,10 @@ class Step(BaseModel):
 class Label(BaseModel):
     """Ground truth. Known by construction, never inferred.
 
-    ``outcome_correct`` is the field the whole project turns on: a faulty trajectory whose
-    final answer is still right is a *silent failure*, invisible to outcome-only evaluation.
+    ``outcome_correct`` records whether the episode ends in the refund or escalation the
+    instance expects; reply text is not part of it. A faulty trajectory with a correct end state
+    is a *silent* failure. Whether an outcome-only judge can see a fault is a separate question:
+    it depends on whether the fault changed the final answer.
     """
 
     faulty: bool
@@ -72,7 +74,7 @@ class Label(BaseModel):
 
     @property
     def silent(self) -> bool:
-        """A fault that survives outcome-only evaluation."""
+        """A fault whose environment outcome is still correct."""
         return self.faulty and self.outcome_correct
 
 

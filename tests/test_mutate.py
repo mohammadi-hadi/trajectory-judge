@@ -30,8 +30,8 @@ EXPECTED_CHECKER_COVERAGE: dict[FailureType, tuple[float, float]] = {
     FailureType.UNSUPPORTED_CLAIM: (0.0, 0.0),
 }
 
-#: Faults that leave the customer-visible outcome correct, and are therefore invisible to
-#: outcome-only evaluation.
+#: Faults that leave the environment outcome correct. Whether an outcome-only judge can see
+#: them is separate: unsupported_claim changes the final answer.
 ALWAYS_SILENT = (
     FailureType.WRONG_TOOL,
     FailureType.HALLUCINATED_ARGUMENT,
