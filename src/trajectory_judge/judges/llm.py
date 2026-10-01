@@ -48,6 +48,10 @@ TAXONOMY = """\
 
 _ENUM = [f.value for f in FailureType] + ["none"]
 
+#: Recorded on a verdict when the model answered but the answer was not a verdict. Any other
+#: ``error`` means the call itself failed and no answer exists at all.
+UNPARSEABLE = "unparseable response"
+
 #: ``reasoning`` comes first so the model argues before it commits. Schema order is generation
 #: order, so this is chain-of-thought enforced by the grammar rather than requested politely.
 STEP_SCHEMA: dict[str, Any] = {
@@ -139,7 +143,7 @@ class LlmJudge(Judge):
         if parsed is None:
             # A judge that produced nothing usable votes "clean" at chance. Silently dropping
             # it would quietly improve whichever judge fails most often to answer.
-            verdict.error = verdict.error or "unparseable response"
+            verdict.error = verdict.error or UNPARSEABLE
             verdict.confidence = 0.5
             return verdict
 

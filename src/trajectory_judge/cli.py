@@ -25,12 +25,16 @@ from trajectory_judge.judges import (
     SelfConsistencyJudge,
     StepRubricJudge,
 )
+from trajectory_judge.judges.llm import UNPARSEABLE
 from trajectory_judge.mutate import mutate
-from trajectory_judge.trace import FailureType, Trajectory
+from trajectory_judge.trace import FailureType, Trajectory, Verdict
 
 app = typer.Typer(add_completion=False, help=__doc__)
 
 DEFAULT_JUDGES = "programmatic,outcome,step"
+
+#: Failed calls in a row that end a run. One is a hiccup; three is a server that has gone away.
+MAX_CONSECUTIVE_FAILURES = 3
 
 
 def build_dataset(n: int, seed: int) -> tuple[list[Trajectory], dict[str, Instance]]:
@@ -66,6 +70,16 @@ def build_dataset(n: int, seed: int) -> tuple[list[Trajectory], dict[str, Instan
     return trajectories, by_id
 
 
+def _call_failed(verdict: Verdict) -> bool:
+    """Whether the model never answered, as opposed to answering with something unusable.
+
+    Such a verdict is not stored. It says "clean" at chance only because nothing came back, and
+    once on disk the resume logic would treat the trajectory as judged: a server that died at 2am
+    would leave the rest of the night's queue recorded as clean verdicts.
+    """
+    return verdict.error is not None and verdict.error != UNPARSEABLE
+
+
 def _make_judge(name: str, model: str, k: int, seed: int) -> Judge:
     if name == "mock":
         return MockJudge()
@@ -92,7 +106,11 @@ def run(
     ),
     out: Path = typer.Option(Path("results/raw"), help="Where raw verdicts are appended."),
 ) -> None:
-    """Judge a freshly built trajectory set. Resumable: already-judged pairs are skipped."""
+    """Judge a freshly built trajectory set. Resumable: already-judged pairs are skipped.
+
+    A call that fails outright is reported and left unjudged, so the exit code is non-zero and a
+    rerun fills the gap. Three failures in a row stop the run.
+    """
     trajectories, instances = build_dataset(n, seed)
     store.write_trajectories(out, trajectories)
     store.write_run_meta(
@@ -110,6 +128,7 @@ def run(
     typer.echo(f"{len(trajectories)} trajectories -> {out}")
 
     done = store.judged_keys(out)
+    unjudged = 0
     for name in [j.strip() for j in judges.split(",") if j.strip()]:
         judge = _make_judge(name, model, k, seed)
         targets = trajectories[:selfcons_subset] if name == "selfcons" else trajectories
@@ -117,11 +136,28 @@ def run(
         typer.echo(
             f"{judge.judge_id}: {len(pending)} to judge ({len(targets) - len(pending)} cached)"
         )
+        streak = 0
         for index, trajectory in enumerate(pending, start=1):
             verdict = judge.judge(trajectory, instances[trajectory.instance_id])
-            store.append_verdict(out, verdict)
+            if verdict.error is None:
+                streak = 0
+            else:
+                streak += 1
+                typer.echo(f"  {trajectory.trajectory_id}: {verdict.error}", err=True)
+            if _call_failed(verdict):
+                unjudged += 1
+            else:
+                store.append_verdict(out, verdict)
+            if streak >= MAX_CONSECUTIVE_FAILURES:
+                typer.echo(
+                    f"stopping: {streak} failed calls in a row from {judge.judge_id}", err=True
+                )
+                raise typer.Exit(2)
             if index % 25 == 0 or index == len(pending):
                 typer.echo(f"  {index}/{len(pending)}")
+    if unjudged:
+        typer.echo(f"{unjudged} calls failed and were not stored; rerun to judge them", err=True)
+        raise typer.Exit(3)
 
 
 @app.command()
