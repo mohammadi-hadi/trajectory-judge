@@ -1,12 +1,14 @@
-"""The two LLM judges under comparison, and the only thing that differs between them.
+"""The two LLM judges under comparison, and what differs between them.
 
-Both are given the same standard operating procedure and the same failure taxonomy. The
-outcome-only judge is shown the goal and the final answer. The step-rubric judge is shown the
-whole trajectory. Everything else — model, temperature, seed, schema — is held constant, so a
-difference in their scores is a difference in evidence, not in prompting effort.
+Both get the same standard operating procedure and failure taxonomy, word for word, and the same
+model, temperature and seed. The outcome-only judge is shown the goal and the final answer and
+asked whether the answer resolves the request. The step-rubric judge is shown the whole
+trajectory and asked to check each step and name the first that went wrong. View, task
+instruction and output schema change together, so a difference in their scores compares two
+configurations; `judges/ablation.py` crosses view with task under one schema to separate them.
 
-That is the experiment. It is also the comparison most production evaluation stacks never run,
-because the outcome-only judge is cheap and its misses are by definition invisible.
+When a fault leaves the goal and the final answer unchanged, the outcome judge's input is the
+clean run's, so no outcome-only prompt can tell the two apart.
 """
 
 from __future__ import annotations
