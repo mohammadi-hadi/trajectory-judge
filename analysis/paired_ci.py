@@ -192,6 +192,8 @@ def in_cell(row: dict, cell: str) -> bool:
         return row["type"] == cell
     return {
         "reply_same": row["reply_same"],
+        "reply_same_kept": row["reply_same"] and not row["loud"],
+        "reply_same_broke": row["reply_same"] and row["loud"],
         "reply_changed": not row["reply_same"],
         "loud": row["loud"],
         "silent": not row["loud"],
@@ -199,7 +201,16 @@ def in_cell(row: dict, cell: str) -> bool:
     }[cell]
 
 
-CELLS = [*TYPES, "reply_same", "reply_changed", "loud", "silent", "all"]
+CELLS = [
+    *TYPES,
+    "reply_same",
+    "reply_changed",
+    "loud",
+    "silent",
+    "all",
+    "reply_same_kept",
+    "reply_same_broke",
+]
 
 
 def paired_table(pairs: Pairs, judges: list[str], rng: np.random.Generator):
@@ -401,6 +412,25 @@ def published(trajectories: list[dict], verdicts: list[dict], agent: list[dict])
         for ft in TYPES
     }
     result["outcome_per_type_recall"] = per_type_recall
+    rows = {
+        "reply_same_kept": [t for t in reply_same_faults if t["label"]["outcome_correct"]],
+        "reply_same_broke": [t for t in reply_same_faults if not t["label"]["outcome_correct"]],
+    }
+    result["cell_recall"] = {
+        j: {
+            name: sum(vmap[(j, t["trajectory_id"])]["faulty"] for t in faults_in) / len(faults_in)
+            for name, faults_in in rows.items()
+        }
+        for j in JUDGES
+    }
+    result["clean_flags"] = {
+        j: sum(
+            vmap[(j, t["trajectory_id"])]["faulty"]
+            for t in trajectories
+            if not t["label"]["faulty"]
+        )
+        for j in JUDGES
+    }
 
     # Per-trajectory metrics with a design-cell bootstrap on its own stream.
     order = [t["trajectory_id"] for t in trajectories]
@@ -592,6 +622,24 @@ def sequence_rule(trajectories: list[dict], agent: list[dict]) -> dict:
         rest = tools[4:]
         return rest not in (["issue_refund", "reply"], ["escalate", "reply"])
 
+    def violates_lenient(t: dict) -> bool:
+        """Extra calls allowed: only the procedure's order, the policy's SKU and reply last."""
+        steps = t["steps"]
+        wanted = ["get_customer", "lookup_order", "get_policy", "check_eligibility"]
+        position = 0
+        sku = None
+        for s in steps:
+            tool = s["call"]["tool"]
+            if position < len(wanted) and tool == wanted[position]:
+                if tool == "lookup_order" and s["observation"]["ok"]:
+                    sku = s["observation"]["data"].get("sku")
+                if tool == "get_policy" and s["call"]["args"].get("sku") != sku:
+                    return True
+                position += 1
+            elif position == len(wanted) and tool in ("issue_refund", "escalate"):
+                position += 1
+        return position < len(wanted) + 1 or not steps or steps[-1]["call"]["tool"] != "reply"
+
     caught = {ft: 0 for ft in TYPES}
     hosts = {ft: 0 for ft in TYPES}
     clean_flags = clean_n = 0
@@ -612,7 +660,19 @@ def sequence_rule(trajectories: list[dict], agent: list[dict]) -> dict:
         "clean_flags": clean_flags,
         "clean_n": clean_n,
         "organic_clean_flags": sum(violates(ep) for ep in organic_clean),
+        "organic_clean_flags_lenient": sum(violates_lenient(ep) for ep in organic_clean),
         "organic_clean_n": len(organic_clean),
+        "lenient_caught": {
+            ft: sum(
+                violates_lenient(t)
+                for t in trajectories
+                if t["label"]["faulty"] and t["label"]["failure_type"] == ft
+            )
+            for ft in TYPES
+        },
+        "lenient_clean_flags": sum(
+            violates_lenient(t) for t in trajectories if not t["label"]["faulty"]
+        ),
     }
 
 

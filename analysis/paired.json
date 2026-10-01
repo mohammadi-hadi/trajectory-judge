@@ -34,6 +34,35 @@
         "point": 0.007927
       }
     },
+    "cell_recall": {
+      "outcome:qwen2.5:14b": {
+        "reply_same_broke": 0.733333,
+        "reply_same_kept": 0.432
+      },
+      "programmatic": {
+        "reply_same_broke": 1.0,
+        "reply_same_kept": 0.6
+      },
+      "selfcons3:qwen2.5:14b": {
+        "reply_same_broke": 1.0,
+        "reply_same_kept": 1.0
+      },
+      "step:llama3.1:8b": {
+        "reply_same_broke": 1.0,
+        "reply_same_kept": 0.976
+      },
+      "step:qwen2.5:14b": {
+        "reply_same_broke": 1.0,
+        "reply_same_kept": 1.0
+      }
+    },
+    "clean_flags": {
+      "outcome:qwen2.5:14b": 33,
+      "programmatic": 0,
+      "selfcons3:qwen2.5:14b": 1,
+      "step:llama3.1:8b": 100,
+      "step:qwen2.5:14b": 0
+    },
     "contrasts": {
       "outcome_paired_loud_minus_silent": {
         "ci": [
@@ -220,6 +249,24 @@
           "n": 151,
           "structural": true
         },
+        "reply_same_broke": {
+          "b01": 0,
+          "b10": 0,
+          "delta": 0.0,
+          "hi": 0.0,
+          "lo": 0.0,
+          "n": 34,
+          "structural": true
+        },
+        "reply_same_kept": {
+          "b01": 0,
+          "b10": 0,
+          "delta": 0.0,
+          "hi": 0.0,
+          "lo": 0.0,
+          "n": 117,
+          "structural": true
+        },
         "silent": {
           "b01": 2,
           "b10": 10,
@@ -325,6 +372,24 @@
           "hi": 0.707792,
           "lo": 0.630865,
           "n": 151,
+          "structural": false
+        },
+        "reply_same_broke": {
+          "b01": 0,
+          "b10": 34,
+          "delta": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "n": 34,
+          "structural": false
+        },
+        "reply_same_kept": {
+          "b01": 0,
+          "b10": 67,
+          "delta": 0.57265,
+          "hi": 0.603452,
+          "lo": 0.544541,
+          "n": 117,
           "structural": false
         },
         "silent": {
@@ -434,6 +499,24 @@
           "n": 151,
           "structural": false
         },
+        "reply_same_broke": {
+          "b01": 0,
+          "b10": 34,
+          "delta": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "n": 34,
+          "structural": false
+        },
+        "reply_same_kept": {
+          "b01": 0,
+          "b10": 117,
+          "delta": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "n": 117,
+          "structural": false
+        },
         "silent": {
           "b01": 0,
           "b10": 125,
@@ -539,6 +622,24 @@
           "hi": 0.0,
           "lo": -0.045455,
           "n": 151,
+          "structural": false
+        },
+        "reply_same_broke": {
+          "b01": 0,
+          "b10": 0,
+          "delta": 0.0,
+          "hi": 0.0,
+          "lo": 0.0,
+          "n": 34,
+          "structural": true
+        },
+        "reply_same_kept": {
+          "b01": 3,
+          "b10": 0,
+          "delta": -0.025641,
+          "hi": 0.0,
+          "lo": -0.057851,
+          "n": 117,
           "structural": false
         },
         "silent": {
@@ -648,6 +749,24 @@
           "n": 151,
           "structural": false
         },
+        "reply_same_broke": {
+          "b01": 0,
+          "b10": 34,
+          "delta": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "n": 34,
+          "structural": false
+        },
+        "reply_same_kept": {
+          "b01": 0,
+          "b10": 117,
+          "delta": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "n": 117,
+          "structural": false
+        },
         "silent": {
           "b01": 0,
           "b10": 126,
@@ -725,7 +844,17 @@
         "unsupported_claim": 50,
         "wrong_tool": 50
       },
+      "lenient_caught": {
+        "hallucinated_argument": 50,
+        "ignored_observation": 0,
+        "premature_stop": 50,
+        "skipped_precondition": 50,
+        "unsupported_claim": 0,
+        "wrong_tool": 50
+      },
+      "lenient_clean_flags": 0,
       "organic_clean_flags": 27,
+      "organic_clean_flags_lenient": 17,
       "organic_clean_n": 47
     },
     "step_mistyped": 74,

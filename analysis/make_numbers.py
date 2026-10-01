@@ -280,6 +280,8 @@ PAIR_CELL_KEY = {
     "Silent": "silent",
     "All": "all",
 }
+#: Rows of tab:paired, printed like the per-type rows (two places).
+PAIR_ROW_KEY = {"ReplySameKept": "reply_same_kept", "ReplySameBroke": "reply_same_broke"}
 
 
 def emit_paired(emit, paired: dict) -> None:
@@ -309,6 +311,14 @@ def emit_paired(emit, paired: dict) -> None:
     ]:
         emit(f"OutcomeFA{name}K", str(sum(strata[k]["clean_flagged"] for k in keys)))
         emit(f"OutcomeFA{name}N", str(sum(strata[k]["clean_n"] for k in keys)))
+    for name, keys in [
+        ("Happy", ["happy"]),
+        ("Restock", ["restocking"]),
+        ("Already", ["already_refunded"]),
+        ("Escal", escal),
+    ]:
+        emit(f"OutcomeSame{name}K", str(sum(strata[k]["reply_same_flagged"] for k in keys)))
+        emit(f"OutcomeSame{name}N", str(sum(strata[k]["reply_same_n"] for k in keys)))
     rates = [s["clean_flagged"] / s["clean_n"] for s in strata.values()]
     emit("OutcomeFAStratumMaxPct", pct(max(rates)))
     emit("OutcomeFAStratumMinPct", pct(min(rates)))
@@ -343,8 +353,16 @@ def emit_paired(emit, paired: dict) -> None:
                 f"{jname}Pair{cname}CI",
                 "---" if cell["structural"] else signed_ci(cell["lo"], cell["hi"]),
             )
+        for rname, rid in PAIR_ROW_KEY.items():
+            cell = table[jid][rid]
+            emit(f"{jname}Pair{rname}", signed(cell["delta"]))
+            emit(f"{jname}Pair{rname}Disc", f"{cell['b10']}/{cell['b01']}")
+            emit(f"{jname}{rname}", fmt(pub["cell_recall"][jid][rid], 2))
+        emit(f"{jname}FAK", str(pub["clean_flags"][jid]))
     for tname, tid in TYPE_KEY.items():
         emit(f"PairN{tname}", str(table["outcome:qwen2.5:14b"][tid]["n"]))
+    for rname, rid in PAIR_ROW_KEY.items():
+        emit(f"NPairs{rname}", str(table["outcome:qwen2.5:14b"][rid]["n"]))
     gap = pub["contrasts"]["outcome_paired_loud_minus_silent"]
     emit("OutcomePairGap", signed(gap["point"], 3))
     emit("OutcomePairGapCI", signed_ci(*gap["ci"], places=3))
@@ -426,6 +444,7 @@ def emit_paired(emit, paired: dict) -> None:
     emit("SeqFA", str(seq["clean_flags"]))
     emit("SeqOrganicCleanK", str(seq["organic_clean_flags"]))
     emit("SeqOrganicCleanN", str(seq["organic_clean_n"]))
+    emit("SeqLenientOrganicCleanK", str(seq["organic_clean_flags_lenient"]))
 
     emit("StepLStepHitsK", str(pub["llama"]["exact_of_detected"]))
     emit("StepLStepHitsN", str(pub["llama"]["detected"]))
@@ -435,6 +454,8 @@ def emit_paired(emit, paired: dict) -> None:
     emit("AgentRefundRepliesExactK", str(agent["refund_replies_state_amount"]))
     emit("AgentRefundRepliesExactN", str(agent["refund_replies"]))
     emit("AgentRepliesOracleIdentical", str(agent["replies_identical_to_oracle"]))
+    emit("AgentNPerStratum", str(agent["n"] // 6))
+    emit("FAUpperBoundPct", "3.6\\%")  # Clopper-Pearson 95% upper bound on 0/100, in percent
 
     if "ablation" in paired:
         emit_ablation(emit, paired["ablation"])
