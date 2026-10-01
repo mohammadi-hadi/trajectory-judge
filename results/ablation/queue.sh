@@ -59,6 +59,7 @@ step "D' stepview-proctask" "${BENCH[@]}" --judges stepview-proctask
 step "B outview-proctask" "${BENCH[@]}" --judges outview-proctask
 step "C stepview-outtask" "${BENCH[@]}" --judges stepview-outtask
 step "A' outview-outtask" "${BENCH[@]}" --judges outview-outtask
+step "A outcome, own schema" "${BENCH[@]}" --judges outcome
 step "agent episodes" --source "$HERE/../agent" --out "$ORGANIC" \
   --judges outview-outtask,stepview-proctask
 echo "$(date -u +%FT%TZ) all done" >>"$ENGINE_LOG"

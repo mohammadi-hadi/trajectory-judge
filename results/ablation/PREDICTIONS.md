@@ -31,6 +31,11 @@ configurations, not two views. This run crosses the two factors under one schema
   is treated as part of the outcome view, so it appears in A′ and B and in neither full-view cell.
 - Also run, and reported descriptively only: A′ and D′ on the 60 agent episodes in
   `results/agent` (`run --source results/agent`).
+- Also run: the published outcome judge, with its own schema, on the same 441. A′ differs from it
+  only in the schema, so this checks that the schema swap alone changes nothing. Added after an
+  8-trajectory smoke test on this engine, in which the two gave byte-identical reasoning and
+  verdicts on all 8; the same smoke test changed the outcome judge's verdict on 5 of 8 against
+  its v0.1.0 verdicts (engine 0.30.11), and the step judge's on none.
 
 ## Estimands and intervals
 
