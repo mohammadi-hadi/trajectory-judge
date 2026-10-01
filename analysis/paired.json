@@ -1,0 +1,1329 @@
+{
+  "meta": {
+    "B": 10000,
+    "method": "instance-clustered pair bootstrap; design-cell trajectory bootstrap for per-trajectory metrics",
+    "seed": 20261001
+  },
+  "published": {
+    "agent": {
+      "n": 60,
+      "refund_replies": 20,
+      "refund_replies_state_amount": 20,
+      "replies_identical_to_oracle": 0
+    },
+    "calibration_deltas": {
+      "outcome_minus_step_brier": {
+        "ci": [
+          0.156186,
+          0.222149
+        ],
+        "point": 0.188619
+      },
+      "outcome_minus_step_ece": {
+        "ci": [
+          0.178096,
+          0.263789
+        ],
+        "point": 0.220273
+      },
+      "selfcons_minus_step_brier": {
+        "ci": [
+          -0.003,
+          0.01896
+        ],
+        "point": 0.007927
+      }
+    },
+    "contrasts": {
+      "outcome_paired_loud_minus_silent": {
+        "ci": [
+          0.240098,
+          0.466852
+        ],
+        "point": 0.344953
+      },
+      "unsup_step_minus_outcome": {
+        "ci": [
+          -0.111111,
+          0.152174
+        ],
+        "point": 0.02
+      }
+    },
+    "design": {
+      "n_faults": 300,
+      "n_late_pairs": 49,
+      "n_late_parents": 41,
+      "n_pairs": 251,
+      "n_pairs_loud": 84,
+      "n_pairs_reply_same": 151,
+      "n_pairs_silent": 167,
+      "n_reply_same": 200,
+      "n_reply_same_broke": 75,
+      "n_reply_same_kept": 125,
+      "outcome_identical_pairs": 151
+    },
+    "llama": {
+      "detected": 297,
+      "distinct_rationales": 15,
+      "exact_of_detected": 222
+    },
+    "localisation_counts": {
+      "programmatic": {
+        "detected": 200,
+        "exact": 200,
+        "invalid": 0,
+        "nonomit_detected": 150,
+        "nonomit_exact": 150,
+        "valid": 200
+      },
+      "selfcons3:qwen2.5:14b": {
+        "detected": 253,
+        "exact": 224,
+        "invalid": 25,
+        "nonomit_detected": 208,
+        "nonomit_exact": 208,
+        "valid": 228
+      },
+      "step:llama3.1:8b": {
+        "detected": 297,
+        "exact": 222,
+        "invalid": 22,
+        "nonomit_detected": 247,
+        "nonomit_exact": 194,
+        "valid": 275
+      },
+      "step:qwen2.5:14b": {
+        "detected": 257,
+        "exact": 217,
+        "invalid": 34,
+        "nonomit_detected": 209,
+        "nonomit_exact": 209,
+        "valid": 223
+      }
+    },
+    "outcome_loud": {
+      "flags": 105,
+      "flags_reply_same": 55
+    },
+    "outcome_per_type_recall": {
+      "hallucinated_argument": 0.34,
+      "ignored_observation": 0.76,
+      "premature_stop": 1.0,
+      "skipped_precondition": 0.74,
+      "unsupported_claim": 0.5,
+      "wrong_tool": 0.34
+    },
+    "outcome_strata": {
+      "already_refunded": {
+        "clean_flagged": 10,
+        "clean_n": 16,
+        "reply_same_flagged": 8,
+        "reply_same_n": 16
+      },
+      "expired": {
+        "clean_flagged": 0,
+        "clean_n": 17,
+        "reply_same_flagged": 0,
+        "reply_same_n": 16
+      },
+      "happy": {
+        "clean_flagged": 13,
+        "clean_n": 17,
+        "reply_same_flagged": 34,
+        "reply_same_n": 43
+      },
+      "non_refundable": {
+        "clean_flagged": 0,
+        "clean_n": 17,
+        "reply_same_flagged": 0,
+        "reply_same_n": 16
+      },
+      "restocking": {
+        "clean_flagged": 10,
+        "clean_n": 17,
+        "reply_same_flagged": 67,
+        "reply_same_n": 93
+      },
+      "wrong_customer": {
+        "clean_flagged": 0,
+        "clean_n": 16,
+        "reply_same_flagged": 0,
+        "reply_same_n": 16
+      }
+    },
+    "paired": {
+      "outcome:qwen2.5:14b": {
+        "all": {
+          "b01": 2,
+          "b10": 43,
+          "delta": 0.163347,
+          "hi": 0.212,
+          "lo": 0.116466,
+          "n": 251,
+          "structural": false
+        },
+        "hallucinated_argument": {
+          "b01": 0,
+          "b10": 0,
+          "delta": 0.0,
+          "hi": 0.0,
+          "lo": 0.0,
+          "mcnemar_p": null,
+          "n": 50,
+          "structural": true
+        },
+        "ignored_observation": {
+          "b01": 0,
+          "b10": 0,
+          "delta": 0.0,
+          "hi": 0.0,
+          "lo": 0.0,
+          "mcnemar_p": null,
+          "n": 17,
+          "structural": true
+        },
+        "loud": {
+          "b01": 0,
+          "b10": 33,
+          "delta": 0.392857,
+          "hi": 0.521127,
+          "lo": 0.282823,
+          "n": 84,
+          "structural": false
+        },
+        "premature_stop": {
+          "b01": 0,
+          "b10": 33,
+          "delta": 0.66,
+          "hi": 0.787234,
+          "lo": 0.529412,
+          "mcnemar_p": 0.0,
+          "n": 50,
+          "structural": false
+        },
+        "reply_changed": {
+          "b01": 2,
+          "b10": 43,
+          "delta": 0.41,
+          "hi": 0.520408,
+          "lo": 0.302083,
+          "n": 100,
+          "structural": false
+        },
+        "reply_same": {
+          "b01": 0,
+          "b10": 0,
+          "delta": 0.0,
+          "hi": 0.0,
+          "lo": 0.0,
+          "n": 151,
+          "structural": true
+        },
+        "silent": {
+          "b01": 2,
+          "b10": 10,
+          "delta": 0.047904,
+          "hi": 0.088757,
+          "lo": 0.011494,
+          "n": 167,
+          "structural": false
+        },
+        "skipped_precondition": {
+          "b01": 0,
+          "b10": 0,
+          "delta": 0.0,
+          "hi": 0.0,
+          "lo": 0.0,
+          "mcnemar_p": null,
+          "n": 34,
+          "structural": true
+        },
+        "unsupported_claim": {
+          "b01": 2,
+          "b10": 10,
+          "delta": 0.16,
+          "hi": 0.294118,
+          "lo": 0.038462,
+          "mcnemar_p": 0.038574,
+          "n": 50,
+          "structural": false
+        },
+        "wrong_tool": {
+          "b01": 0,
+          "b10": 0,
+          "delta": 0.0,
+          "hi": 0.0,
+          "lo": 0.0,
+          "mcnemar_p": null,
+          "n": 50,
+          "structural": true
+        }
+      },
+      "programmatic": {
+        "all": {
+          "b01": 0,
+          "b10": 151,
+          "delta": 0.601594,
+          "hi": 0.631148,
+          "lo": 0.575285,
+          "n": 251,
+          "structural": false
+        },
+        "hallucinated_argument": {
+          "b01": 0,
+          "b10": 50,
+          "delta": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.0,
+          "n": 50,
+          "structural": false
+        },
+        "ignored_observation": {
+          "b01": 0,
+          "b10": 17,
+          "delta": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 1.5e-05,
+          "n": 17,
+          "structural": false
+        },
+        "loud": {
+          "b01": 0,
+          "b10": 84,
+          "delta": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "n": 84,
+          "structural": false
+        },
+        "premature_stop": {
+          "b01": 0,
+          "b10": 50,
+          "delta": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.0,
+          "n": 50,
+          "structural": false
+        },
+        "reply_changed": {
+          "b01": 0,
+          "b10": 50,
+          "delta": 0.5,
+          "hi": 0.5,
+          "lo": 0.5,
+          "n": 100,
+          "structural": false
+        },
+        "reply_same": {
+          "b01": 0,
+          "b10": 101,
+          "delta": 0.668874,
+          "hi": 0.707792,
+          "lo": 0.630865,
+          "n": 151,
+          "structural": false
+        },
+        "silent": {
+          "b01": 0,
+          "b10": 67,
+          "delta": 0.401198,
+          "hi": 0.432103,
+          "lo": 0.374137,
+          "n": 167,
+          "structural": false
+        },
+        "skipped_precondition": {
+          "b01": 0,
+          "b10": 34,
+          "delta": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.0,
+          "n": 34,
+          "structural": false
+        },
+        "unsupported_claim": {
+          "b01": 0,
+          "b10": 0,
+          "delta": 0.0,
+          "hi": 0.0,
+          "lo": 0.0,
+          "mcnemar_p": null,
+          "n": 50,
+          "structural": true
+        },
+        "wrong_tool": {
+          "b01": 0,
+          "b10": 0,
+          "delta": 0.0,
+          "hi": 0.0,
+          "lo": 0.0,
+          "mcnemar_p": null,
+          "n": 50,
+          "structural": true
+        }
+      },
+      "selfcons3:qwen2.5:14b": {
+        "all": {
+          "b01": 0,
+          "b10": 204,
+          "delta": 0.812749,
+          "hi": 0.843373,
+          "lo": 0.782605,
+          "n": 251,
+          "structural": false
+        },
+        "hallucinated_argument": {
+          "b01": 0,
+          "b10": 50,
+          "delta": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.0,
+          "n": 50,
+          "structural": false
+        },
+        "ignored_observation": {
+          "b01": 0,
+          "b10": 17,
+          "delta": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 1.5e-05,
+          "n": 17,
+          "structural": false
+        },
+        "loud": {
+          "b01": 0,
+          "b10": 79,
+          "delta": 0.940476,
+          "hi": 0.987654,
+          "lo": 0.883721,
+          "n": 84,
+          "structural": false
+        },
+        "premature_stop": {
+          "b01": 0,
+          "b10": 45,
+          "delta": 0.9,
+          "hi": 0.978723,
+          "lo": 0.808511,
+          "mcnemar_p": 0.0,
+          "n": 50,
+          "structural": false
+        },
+        "reply_changed": {
+          "b01": 0,
+          "b10": 53,
+          "delta": 0.53,
+          "hi": 0.6,
+          "lo": 0.46,
+          "n": 100,
+          "structural": false
+        },
+        "reply_same": {
+          "b01": 0,
+          "b10": 151,
+          "delta": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "n": 151,
+          "structural": false
+        },
+        "silent": {
+          "b01": 0,
+          "b10": 125,
+          "delta": 0.748503,
+          "hi": 0.782857,
+          "lo": 0.717514,
+          "n": 167,
+          "structural": false
+        },
+        "skipped_precondition": {
+          "b01": 0,
+          "b10": 34,
+          "delta": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.0,
+          "n": 34,
+          "structural": false
+        },
+        "unsupported_claim": {
+          "b01": 0,
+          "b10": 8,
+          "delta": 0.16,
+          "hi": 0.265306,
+          "lo": 0.0625,
+          "mcnemar_p": 0.007812,
+          "n": 50,
+          "structural": false
+        },
+        "wrong_tool": {
+          "b01": 0,
+          "b10": 50,
+          "delta": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.0,
+          "n": 50,
+          "structural": false
+        }
+      },
+      "step:llama3.1:8b": {
+        "all": {
+          "b01": 3,
+          "b10": 0,
+          "delta": -0.011952,
+          "hi": 0.0,
+          "lo": -0.027027,
+          "n": 251,
+          "structural": false
+        },
+        "hallucinated_argument": {
+          "b01": 3,
+          "b10": 0,
+          "delta": -0.06,
+          "hi": 0.0,
+          "lo": -0.134615,
+          "mcnemar_p": 0.25,
+          "n": 50,
+          "structural": false
+        },
+        "ignored_observation": {
+          "b01": 0,
+          "b10": 0,
+          "delta": 0.0,
+          "hi": 0.0,
+          "lo": 0.0,
+          "mcnemar_p": null,
+          "n": 17,
+          "structural": true
+        },
+        "loud": {
+          "b01": 0,
+          "b10": 0,
+          "delta": 0.0,
+          "hi": 0.0,
+          "lo": 0.0,
+          "n": 84,
+          "structural": true
+        },
+        "premature_stop": {
+          "b01": 0,
+          "b10": 0,
+          "delta": 0.0,
+          "hi": 0.0,
+          "lo": 0.0,
+          "mcnemar_p": null,
+          "n": 50,
+          "structural": true
+        },
+        "reply_changed": {
+          "b01": 0,
+          "b10": 0,
+          "delta": 0.0,
+          "hi": 0.0,
+          "lo": 0.0,
+          "n": 100,
+          "structural": true
+        },
+        "reply_same": {
+          "b01": 3,
+          "b10": 0,
+          "delta": -0.019868,
+          "hi": 0.0,
+          "lo": -0.045455,
+          "n": 151,
+          "structural": false
+        },
+        "silent": {
+          "b01": 3,
+          "b10": 0,
+          "delta": -0.017964,
+          "hi": 0.0,
+          "lo": -0.040273,
+          "n": 167,
+          "structural": false
+        },
+        "skipped_precondition": {
+          "b01": 0,
+          "b10": 0,
+          "delta": 0.0,
+          "hi": 0.0,
+          "lo": 0.0,
+          "mcnemar_p": null,
+          "n": 34,
+          "structural": true
+        },
+        "unsupported_claim": {
+          "b01": 0,
+          "b10": 0,
+          "delta": 0.0,
+          "hi": 0.0,
+          "lo": 0.0,
+          "mcnemar_p": null,
+          "n": 50,
+          "structural": true
+        },
+        "wrong_tool": {
+          "b01": 0,
+          "b10": 0,
+          "delta": 0.0,
+          "hi": 0.0,
+          "lo": 0.0,
+          "mcnemar_p": null,
+          "n": 50,
+          "structural": true
+        }
+      },
+      "step:qwen2.5:14b": {
+        "all": {
+          "b01": 0,
+          "b10": 208,
+          "delta": 0.828685,
+          "hi": 0.855857,
+          "lo": 0.803279,
+          "n": 251,
+          "structural": false
+        },
+        "hallucinated_argument": {
+          "b01": 0,
+          "b10": 50,
+          "delta": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.0,
+          "n": 50,
+          "structural": false
+        },
+        "ignored_observation": {
+          "b01": 0,
+          "b10": 17,
+          "delta": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 1.5e-05,
+          "n": 17,
+          "structural": false
+        },
+        "loud": {
+          "b01": 0,
+          "b10": 82,
+          "delta": 0.97619,
+          "hi": 1.0,
+          "lo": 0.938768,
+          "n": 84,
+          "structural": false
+        },
+        "premature_stop": {
+          "b01": 0,
+          "b10": 48,
+          "delta": 0.96,
+          "hi": 1.0,
+          "lo": 0.895833,
+          "mcnemar_p": 0.0,
+          "n": 50,
+          "structural": false
+        },
+        "reply_changed": {
+          "b01": 0,
+          "b10": 57,
+          "delta": 0.57,
+          "hi": 0.632653,
+          "lo": 0.509804,
+          "n": 100,
+          "structural": false
+        },
+        "reply_same": {
+          "b01": 0,
+          "b10": 151,
+          "delta": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "n": 151,
+          "structural": false
+        },
+        "silent": {
+          "b01": 0,
+          "b10": 126,
+          "delta": 0.754491,
+          "hi": 0.790123,
+          "lo": 0.722581,
+          "n": 167,
+          "structural": false
+        },
+        "skipped_precondition": {
+          "b01": 0,
+          "b10": 34,
+          "delta": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.0,
+          "n": 34,
+          "structural": false
+        },
+        "unsupported_claim": {
+          "b01": 0,
+          "b10": 9,
+          "delta": 0.18,
+          "hi": 0.291667,
+          "lo": 0.08,
+          "mcnemar_p": 0.003906,
+          "n": 50,
+          "structural": false
+        },
+        "wrong_tool": {
+          "b01": 0,
+          "b10": 50,
+          "delta": 1.0,
+          "hi": 1.0,
+          "lo": 1.0,
+          "mcnemar_p": 0.0,
+          "n": 50,
+          "structural": false
+        }
+      }
+    },
+    "ppv_floor_5pct": {
+      "programmatic": 0.492199,
+      "step:qwen2.5:14b": 0.554668
+    },
+    "selfcons": {
+      "any_fa": 0.02,
+      "any_ppv_5pct": 0.701571,
+      "any_unsup": 0.36,
+      "any_unsup_ci": [
+        0.22,
+        0.5
+      ],
+      "majority_ppv_5pct": 0.816129,
+      "unsup_missed": 42,
+      "unsup_missed_one_vote": 10,
+      "unsup_missed_unanimous": 32
+    },
+    "sequence_rule": {
+      "caught": {
+        "hallucinated_argument": 50,
+        "ignored_observation": 0,
+        "premature_stop": 50,
+        "skipped_precondition": 50,
+        "unsupported_claim": 0,
+        "wrong_tool": 50
+      },
+      "clean_flags": 0,
+      "clean_n": 100,
+      "hosts": {
+        "hallucinated_argument": 50,
+        "ignored_observation": 50,
+        "premature_stop": 50,
+        "skipped_precondition": 50,
+        "unsupported_claim": 50,
+        "wrong_tool": 50
+      },
+      "organic_clean_flags": 27,
+      "organic_clean_n": 47
+    },
+    "step_mistyped": 74,
+    "step_unsup_rationales": {
+      "by_template": {
+        "courier": {
+          "caught": 0,
+          "n": 16
+        },
+        "replacement": {
+          "caught": 0,
+          "n": 16
+        },
+        "subscription": {
+          "caught": 1,
+          "n": 10
+        },
+        "voucher": {
+          "caught": 8,
+          "n": 8
+        }
+      },
+      "missed": 41,
+      "missed_capped": 6,
+      "missed_mention_reply": 39,
+      "missed_names_claim": 11
+    },
+    "trajectory": {
+      "outcome:qwen2.5:14b": {
+        "bal_acc": {
+          "ci": [
+            0.588333,
+            0.693333
+          ],
+          "point": 0.641667
+        },
+        "brier": {
+          "ci": [
+            0.254537,
+            0.317508
+          ],
+          "point": 0.28597
+        },
+        "brier_clean": {
+          "ci": [
+            0.203392,
+            0.346241
+          ],
+          "point": 0.273719
+        },
+        "brier_faulty": {
+          "ci": [
+            0.255332,
+            0.324996
+          ],
+          "point": 0.290054
+        },
+        "fa": {
+          "ci": [
+            0.24,
+            0.43
+          ],
+          "point": 0.33
+        },
+        "loc_det": {
+          "ci": [
+            0.0,
+            0.0
+          ],
+          "point": 0.0
+        },
+        "loc_joint": {
+          "ci": [
+            0.0,
+            0.0
+          ],
+          "point": 0.0
+        },
+        "loc_joint_nonomit": {
+          "ci": [
+            0.0,
+            0.0
+          ],
+          "point": 0.0
+        },
+        "loc_nonomit": {
+          "ci": [
+            0.0,
+            0.0
+          ],
+          "point": 0.0
+        },
+        "ppv_0.01": {
+          "ci": [
+            0.014203,
+            0.025565
+          ],
+          "point": 0.018428
+        },
+        "ppv_0.05": {
+          "ci": [
+            0.069829,
+            0.12026
+          ],
+          "point": 0.089104
+        },
+        "ppv_0.1": {
+          "ci": [
+            0.136803,
+            0.223957
+          ],
+          "point": 0.171163
+        },
+        "ppv_0.25": {
+          "ci": [
+            0.322242,
+            0.464026
+          ],
+          "point": 0.382536
+        },
+        "sens": {
+          "ci": [
+            0.566667,
+            0.66
+          ],
+          "point": 0.613333
+        },
+        "spec": {
+          "ci": [
+            0.57,
+            0.76
+          ],
+          "point": 0.67
+        },
+        "type_joint": {
+          "ci": [
+            0.303333,
+            0.36
+          ],
+          "point": 0.33
+        }
+      },
+      "programmatic": {
+        "bal_acc": {
+          "ci": [
+            0.833333,
+            0.833333
+          ],
+          "point": 0.833333
+        },
+        "brier": {
+          "ci": [
+            0.13125,
+            0.13125
+          ],
+          "point": 0.13125
+        },
+        "brier_clean": {
+          "ci": [
+            0.16,
+            0.16
+          ],
+          "point": 0.16
+        },
+        "brier_faulty": {
+          "ci": [
+            0.121667,
+            0.121667
+          ],
+          "point": 0.121667
+        },
+        "fa": {
+          "ci": [
+            0.0,
+            0.0
+          ],
+          "point": 0.0
+        },
+        "loc_det": {
+          "ci": [
+            1.0,
+            1.0
+          ],
+          "point": 1.0
+        },
+        "loc_joint": {
+          "ci": [
+            0.666667,
+            0.666667
+          ],
+          "point": 0.666667
+        },
+        "loc_joint_nonomit": {
+          "ci": [
+            0.6,
+            0.6
+          ],
+          "point": 0.6
+        },
+        "loc_nonomit": {
+          "ci": [
+            1.0,
+            1.0
+          ],
+          "point": 1.0
+        },
+        "ppv_0.01": {
+          "ci": [
+            1.0,
+            1.0
+          ],
+          "point": 1.0
+        },
+        "ppv_0.05": {
+          "ci": [
+            1.0,
+            1.0
+          ],
+          "point": 1.0
+        },
+        "ppv_0.1": {
+          "ci": [
+            1.0,
+            1.0
+          ],
+          "point": 1.0
+        },
+        "ppv_0.25": {
+          "ci": [
+            1.0,
+            1.0
+          ],
+          "point": 1.0
+        },
+        "sens": {
+          "ci": [
+            0.666667,
+            0.666667
+          ],
+          "point": 0.666667
+        },
+        "spec": {
+          "ci": [
+            1.0,
+            1.0
+          ],
+          "point": 1.0
+        },
+        "type_joint": {
+          "ci": [
+            0.666667,
+            0.666667
+          ],
+          "point": 0.666667
+        }
+      },
+      "selfcons3:qwen2.5:14b": {
+        "bal_acc": {
+          "ci": [
+            0.901667,
+            0.93
+          ],
+          "point": 0.916667
+        },
+        "brier": {
+          "ci": [
+            0.090833,
+            0.118889
+          ],
+          "point": 0.105278
+        },
+        "brier_clean": {
+          "ci": [
+            0.0,
+            0.015556
+          ],
+          "point": 0.005556
+        },
+        "brier_faulty": {
+          "ci": [
+            0.11963,
+            0.156296
+          ],
+          "point": 0.138519
+        },
+        "fa": {
+          "ci": [
+            0.0,
+            0.03
+          ],
+          "point": 0.01
+        },
+        "loc_det": {
+          "ci": [
+            0.859304,
+            0.912
+          ],
+          "point": 0.885375
+        },
+        "loc_joint": {
+          "ci": [
+            0.72,
+            0.773333
+          ],
+          "point": 0.746667
+        },
+        "loc_joint_nonomit": {
+          "ci": [
+            0.812,
+            0.852
+          ],
+          "point": 0.832
+        },
+        "loc_nonomit": {
+          "ci": [
+            1.0,
+            1.0
+          ],
+          "point": 1.0
+        },
+        "ppv_0.01": {
+          "ci": [
+            0.218421,
+            1.0
+          ],
+          "point": 0.46
+        },
+        "ppv_0.05": {
+          "ci": [
+            0.592857,
+            1.0
+          ],
+          "point": 0.816129
+        },
+        "ppv_0.1": {
+          "ci": [
+            0.754545,
+            1.0
+          ],
+          "point": 0.903571
+        },
+        "ppv_0.25": {
+          "ci": [
+            0.902174,
+            1.0
+          ],
+          "point": 0.965649
+        },
+        "sens": {
+          "ci": [
+            0.82,
+            0.866667
+          ],
+          "point": 0.843333
+        },
+        "spec": {
+          "ci": [
+            0.97,
+            1.0
+          ],
+          "point": 0.99
+        },
+        "type_joint": {
+          "ci": [
+            0.56,
+            0.633333
+          ],
+          "point": 0.596667
+        }
+      },
+      "step:llama3.1:8b": {
+        "bal_acc": {
+          "ci": [
+            0.488333,
+            0.5
+          ],
+          "point": 0.495
+        },
+        "brier": {
+          "ci": [
+            0.20255,
+            0.21792
+          ],
+          "point": 0.20945
+        },
+        "brier_clean": {
+          "ci": [
+            0.7624,
+            0.7896
+          ],
+          "point": 0.776
+        },
+        "brier_faulty": {
+          "ci": [
+            0.012125,
+            0.031609
+          ],
+          "point": 0.0206
+        },
+        "fa": {
+          "ci": [
+            1.0,
+            1.0
+          ],
+          "point": 1.0
+        },
+        "loc_det": {
+          "ci": [
+            0.713805,
+            0.780405
+          ],
+          "point": 0.747475
+        },
+        "loc_joint": {
+          "ci": [
+            0.706667,
+            0.773333
+          ],
+          "point": 0.74
+        },
+        "loc_joint_nonomit": {
+          "ci": [
+            0.744,
+            0.808
+          ],
+          "point": 0.776
+        },
+        "loc_nonomit": {
+          "ci": [
+            0.757085,
+            0.814516
+          ],
+          "point": 0.785425
+        },
+        "ppv_0.01": {
+          "ci": [
+            0.009769,
+            0.01
+          ],
+          "point": 0.009901
+        },
+        "ppv_0.05": {
+          "ci": [
+            0.04889,
+            0.05
+          ],
+          "point": 0.049525
+        },
+        "ppv_0.1": {
+          "ci": [
+            0.097895,
+            0.1
+          ],
+          "point": 0.099099
+        },
+        "ppv_0.25": {
+          "ci": [
+            0.245599,
+            0.25
+          ],
+          "point": 0.24812
+        },
+        "sens": {
+          "ci": [
+            0.976667,
+            1.0
+          ],
+          "point": 0.99
+        },
+        "spec": {
+          "ci": [
+            0.0,
+            0.0
+          ],
+          "point": 0.0
+        },
+        "type_joint": {
+          "ci": [
+            0.366667,
+            0.433333
+          ],
+          "point": 0.4
+        }
+      },
+      "step:qwen2.5:14b": {
+        "bal_acc": {
+          "ci": [
+            0.918333,
+            0.938333
+          ],
+          "point": 0.928333
+        },
+        "brier": {
+          "ci": [
+            0.084701,
+            0.109854
+          ],
+          "point": 0.097351
+        },
+        "brier_clean": {
+          "ci": [
+            0.005976,
+            0.006361
+          ],
+          "point": 0.006196
+        },
+        "brier_faulty": {
+          "ci": [
+            0.11086,
+            0.144407
+          ],
+          "point": 0.127736
+        },
+        "fa": {
+          "ci": [
+            0.0,
+            0.0
+          ],
+          "point": 0.0
+        },
+        "loc_det": {
+          "ci": [
+            0.824219,
+            0.866667
+          ],
+          "point": 0.844358
+        },
+        "loc_joint": {
+          "ci": [
+            0.7,
+            0.75
+          ],
+          "point": 0.723333
+        },
+        "loc_joint_nonomit": {
+          "ci": [
+            0.816,
+            0.86
+          ],
+          "point": 0.836
+        },
+        "loc_nonomit": {
+          "ci": [
+            1.0,
+            1.0
+          ],
+          "point": 1.0
+        },
+        "ppv_0.01": {
+          "ci": [
+            1.0,
+            1.0
+          ],
+          "point": 1.0
+        },
+        "ppv_0.05": {
+          "ci": [
+            1.0,
+            1.0
+          ],
+          "point": 1.0
+        },
+        "ppv_0.1": {
+          "ci": [
+            1.0,
+            1.0
+          ],
+          "point": 1.0
+        },
+        "ppv_0.25": {
+          "ci": [
+            1.0,
+            1.0
+          ],
+          "point": 1.0
+        },
+        "sens": {
+          "ci": [
+            0.836667,
+            0.876667
+          ],
+          "point": 0.856667
+        },
+        "spec": {
+          "ci": [
+            1.0,
+            1.0
+          ],
+          "point": 1.0
+        },
+        "type_joint": {
+          "ci": [
+            0.573333,
+            0.646667
+          ],
+          "point": 0.61
+        }
+      }
+    }
+  }
+}
