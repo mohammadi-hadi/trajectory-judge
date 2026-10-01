@@ -17,6 +17,7 @@ from trajectory_judge.trace import Trajectory, Verdict
 
 TRAJECTORIES = "trajectories.jsonl"
 VERDICTS = "verdicts.jsonl"
+RESPONSES = "responses.jsonl"
 RUN_META = "run.json"
 
 
@@ -58,6 +59,17 @@ def append_verdict(directory: Path, verdict: Verdict) -> None:
 
 def read_verdicts(directory: Path) -> list[Verdict]:
     return [Verdict.model_validate(row) for row in _read_lines(directory / VERDICTS)]
+
+
+def append_response(directory: Path, row: dict[str, Any]) -> None:
+    """Append one raw model response, kept next to the verdict that was coerced from it."""
+    directory.mkdir(parents=True, exist_ok=True)
+    with (directory / RESPONSES).open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(row, sort_keys=True) + "\n")
+
+
+def read_responses(directory: Path) -> list[dict[str, Any]]:
+    return list(_read_lines(directory / RESPONSES))
 
 
 def judged_keys(directory: Path) -> set[tuple[str, str]]:

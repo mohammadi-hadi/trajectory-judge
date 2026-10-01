@@ -9,8 +9,10 @@ confusion matrix that says more about the generator than about any judge.
 
 from __future__ import annotations
 
+import hashlib
 import random
 from pathlib import Path
+from typing import Any
 
 import typer
 
@@ -19,6 +21,7 @@ from trajectory_judge.agents.oracle import run_oracle
 from trajectory_judge.env.world import Instance, generate_instances
 from trajectory_judge.judges import (
     Judge,
+    LlmJudge,
     MockJudge,
     OutcomeJudge,
     ProgrammaticJudge,
@@ -26,6 +29,7 @@ from trajectory_judge.judges import (
     StepRubricJudge,
 )
 from trajectory_judge.judges.llm import UNPARSEABLE
+from trajectory_judge.judges.ollama_client import Generation
 from trajectory_judge.mutate import mutate
 from trajectory_judge.trace import FailureType, Trajectory, Verdict
 
@@ -80,6 +84,21 @@ def _call_failed(verdict: Verdict) -> bool:
     return verdict.error is not None and verdict.error != UNPARSEABLE
 
 
+def _response_row(judge: LlmJudge, trajectory: Trajectory, response: Generation) -> dict[str, Any]:
+    """The raw response, keyed like its verdict, with a hash of the exact prompt it answered."""
+    prompt = judge.prompt(trajectory).encode("utf-8")
+    return {
+        "trajectory_id": trajectory.trajectory_id,
+        "judge_id": judge.judge_id,
+        "prompt_sha256": hashlib.sha256(prompt).hexdigest(),
+        "text": response.text,
+        "prompt_tokens": response.prompt_tokens,
+        "completion_tokens": response.completion_tokens,
+        "latency_s": response.latency_s,
+        "error": response.error,
+    }
+
+
 def _make_judge(name: str, model: str, k: int, seed: int) -> Judge:
     if name == "mock":
         return MockJudge()
@@ -105,6 +124,9 @@ def run(
         150, help="Trajectories the self-consistency judge covers, since it costs k times more."
     ),
     out: Path = typer.Option(Path("results/raw"), help="Where raw verdicts are appended."),
+    keep_responses: bool = typer.Option(
+        False, help="Also append each LLM judge's raw response to responses.jsonl."
+    ),
 ) -> None:
     """Judge a freshly built trajectory set. Resumable: already-judged pairs are skipped.
 
@@ -138,7 +160,13 @@ def run(
         )
         streak = 0
         for index, trajectory in enumerate(pending, start=1):
-            verdict = judge.judge(trajectory, instances[trajectory.instance_id])
+            instance = instances[trajectory.instance_id]
+            if keep_responses and isinstance(judge, LlmJudge):
+                verdict, response = judge.judge_with_response(trajectory, instance)
+                if not _call_failed(verdict):
+                    store.append_response(out, _response_row(judge, trajectory, response))
+            else:
+                verdict = judge.judge(trajectory, instance)
             if verdict.error is None:
                 streak = 0
             else:

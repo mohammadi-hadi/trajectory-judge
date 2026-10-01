@@ -1,4 +1,4 @@
-"""A failed model call must never be stored as a verdict.
+"""What the run command stores: never a failed call, and the raw response when asked.
 
 An LLM judge never raises: a call that gets no answer comes back as a "clean" verdict at
 chance with the transport error attached. Stored, it would be read back as judged, so a server
@@ -8,11 +8,12 @@ clean and the resume logic would never revisit them.
 
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 from typing import Any
 
 import pytest
-from helpers_llm import FakeGenerate
+from helpers_llm import FakeGenerate, verdict_json
 from typer.testing import CliRunner
 
 from trajectory_judge import store
@@ -69,3 +70,25 @@ def test_an_unusable_answer_is_stored_but_a_streak_of_them_stops_the_run(
     verdicts = store.read_verdicts(tmp_path)
     assert len(verdicts) == 3
     assert {v.error for v in verdicts} == {"unparseable response"}
+
+
+def test_kept_responses_line_up_with_their_verdicts(
+    fake_generate: FakeGenerate, tmp_path: Path
+) -> None:
+    fake_generate.text = verdict_json(failure_step=99)
+    result = runner.invoke(
+        app,
+        ["run", "--n", "8", "--judges", "step", "--out", str(tmp_path), "--keep-responses"],
+    )
+    assert result.exit_code == 0, result.output
+    verdicts = store.read_verdicts(tmp_path)
+    responses = store.read_responses(tmp_path)
+    assert [(r["trajectory_id"], r["judge_id"]) for r in responses] == [
+        (v.trajectory_id, v.judge_id) for v in verdicts
+    ]
+    # The verdict drops the out-of-range step; the response still says what the model named.
+    assert all(v.failure_step is None for v in verdicts)
+    assert all('"failure_step": 99' in r["text"] for r in responses)
+    prompts = {c["prompt"] for c in fake_generate.calls}
+    hashes = {hashlib.sha256(p.encode("utf-8")).hexdigest() for p in prompts}
+    assert {r["prompt_sha256"] for r in responses} == hashes

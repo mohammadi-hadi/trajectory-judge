@@ -17,7 +17,12 @@ import httpx
 
 from trajectory_judge.env.world import Instance
 from trajectory_judge.judges.base import Judge
-from trajectory_judge.judges.ollama_client import DEFAULT_HOST, DEFAULT_TIMEOUT_S, generate
+from trajectory_judge.judges.ollama_client import (
+    DEFAULT_HOST,
+    DEFAULT_TIMEOUT_S,
+    Generation,
+    generate,
+)
 from trajectory_judge.trace import FailureType, Trajectory, Verdict
 
 #: The procedure the agent was supposed to follow. A judge that has not been told the rules is
@@ -119,6 +124,17 @@ class LlmJudge(Judge):
         raise NotImplementedError
 
     def judge(self, trajectory: Trajectory, instance: Instance) -> Verdict:
+        return self.judge_with_response(trajectory, instance)[0]
+
+    def judge_with_response(
+        self, trajectory: Trajectory, instance: Instance
+    ) -> tuple[Verdict, Generation]:
+        """The verdict plus the raw response it was coerced from.
+
+        Coercion keeps only what fits a verdict: a step outside the trajectory is dropped and a
+        long rationale is cut. A run that may later need to ask what the model actually said
+        keeps the response as well.
+        """
         del instance  # An LLM judge sees the trajectory and nothing else.
         result = generate(
             self.model,
@@ -145,7 +161,7 @@ class LlmJudge(Judge):
             # it would quietly improve whichever judge fails most often to answer.
             verdict.error = verdict.error or UNPARSEABLE
             verdict.confidence = 0.5
-            return verdict
+            return verdict, result
 
         verdict.faulty = bool(parsed.get("faulty", False))
         verdict.rationale = str(parsed.get("reasoning", ""))[:2000]
@@ -159,7 +175,7 @@ class LlmJudge(Judge):
             step = parsed.get("failure_step")
             if isinstance(step, int) and 0 <= step < len(trajectory.steps):
                 verdict.failure_step = step
-        return verdict
+        return verdict, result
 
 
 def _clamp(value: object) -> float:
