@@ -28,6 +28,7 @@ from trajectory_judge.judges import (
     SelfConsistencyJudge,
     StepRubricJudge,
 )
+from trajectory_judge.judges.ablation import ABLATION_JUDGES
 from trajectory_judge.judges.llm import UNPARSEABLE
 from trajectory_judge.judges.ollama_client import Generation
 from trajectory_judge.mutate import mutate
@@ -110,6 +111,8 @@ def _make_judge(name: str, model: str, k: int, seed: int) -> Judge:
         return StepRubricJudge(model, seed=seed)
     if name == "selfcons":
         return SelfConsistencyJudge(model, k=k, base_seed=seed)
+    if name in ABLATION_JUDGES:
+        return ABLATION_JUDGES[name](model, seed=seed)
     raise typer.BadParameter(f"unknown judge {name!r}")
 
 

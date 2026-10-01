@@ -120,6 +120,11 @@ class LlmJudge(Judge):
     def family(self) -> str:
         raise NotImplementedError
 
+    @property
+    def localises(self) -> bool:
+        """Whether a step this judge names is kept. A judge shown no steps names none."""
+        return self.include_steps
+
     def prompt(self, trajectory: Trajectory) -> str:
         raise NotImplementedError
 
@@ -171,7 +176,7 @@ class LlmJudge(Judge):
         if verdict.faulty and raw_type in {f.value for f in FailureType}:
             verdict.failure_type = FailureType(raw_type)
 
-        if verdict.faulty and self.include_steps:
+        if verdict.faulty and self.localises:
             step = parsed.get("failure_step")
             if isinstance(step, int) and 0 <= step < len(trajectory.steps):
                 verdict.failure_step = step
