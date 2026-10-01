@@ -654,6 +654,13 @@ def sequence_rule(trajectories: list[dict], agent: list[dict]) -> dict:
     organic_clean = [
         ep for ep in agent if not ep["label"]["faulty"] and ep["label"]["outcome_correct"]
     ]
+    flagged = [ep for ep in organic_clean if violates(ep)]
+
+    def tools_of(ep: dict) -> list[str]:
+        return [st["call"]["tool"] for st in ep["steps"]]
+
+    no_check = {ep["trajectory_id"] for ep in flagged if "check_eligibility" not in tools_of(ep)}
+    lenient = {ep["trajectory_id"] for ep in organic_clean if violates_lenient(ep)}
     return {
         "caught": caught,
         "hosts": hosts,
@@ -661,6 +668,14 @@ def sequence_rule(trajectories: list[dict], agent: list[dict]) -> dict:
         "clean_n": clean_n,
         "organic_clean_flags": sum(violates(ep) for ep in organic_clean),
         "organic_clean_flags_lenient": sum(violates_lenient(ep) for ep in organic_clean),
+        "organic_flagged_repeat_escalate": sum(
+            1 for ep in flagged if tools_of(ep).count("escalate") > 1
+        ),
+        "organic_flagged_no_eligibility": len(no_check),
+        "organic_flagged_second_customer": sum(
+            1 for ep in flagged if tools_of(ep).count("get_customer") > 1
+        ),
+        "lenient_is_no_eligibility": lenient == no_check,
         "organic_clean_n": len(organic_clean),
         "lenient_caught": {
             ft: sum(

@@ -445,6 +445,9 @@ def emit_paired(emit, paired: dict) -> None:
     emit("SeqOrganicCleanK", str(seq["organic_clean_flags"]))
     emit("SeqOrganicCleanN", str(seq["organic_clean_n"]))
     emit("SeqLenientOrganicCleanK", str(seq["organic_clean_flags_lenient"]))
+    emit("SeqOrganicRepeatEscK", str(seq["organic_flagged_repeat_escalate"]))
+    emit("SeqOrganicNoEligK", str(seq["organic_flagged_no_eligibility"]))
+    emit("SeqOrganicTwoCustK", str(seq["organic_flagged_second_customer"]))
 
     emit("StepLStepHitsK", str(pub["llama"]["exact_of_detected"]))
     emit("StepLStepHitsN", str(pub["llama"]["detected"]))

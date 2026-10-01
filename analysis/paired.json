@@ -853,9 +853,13 @@
         "wrong_tool": 50
       },
       "lenient_clean_flags": 0,
+      "lenient_is_no_eligibility": true,
       "organic_clean_flags": 27,
       "organic_clean_flags_lenient": 17,
-      "organic_clean_n": 47
+      "organic_clean_n": 47,
+      "organic_flagged_no_eligibility": 17,
+      "organic_flagged_repeat_escalate": 25,
+      "organic_flagged_second_customer": 2
     },
     "step_mistyped": 74,
     "step_unsup_rationales": {
