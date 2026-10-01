@@ -1,10 +1,11 @@
 """The programmatic validity checker: the process rules the environment refuses to enforce.
 
 This is the free, deterministic baseline in the results table, and its *coverage is uneven by
-construction*. Rules can catch a skipped precondition or an ungrounded identifier, because
-those are structural. Nothing here can catch a plausible-but-wrong tool choice or an
-unsupported sentence in the final answer — those need a reader. That gap is the argument for
-LLM judges, so the checker is built to expose it rather than paper over it.
+construction*. Rules catch a skipped precondition or an ungrounded identifier, because those
+are structural. These rules encode no required tool order and never read the reply, so they miss
+a plausible but wrong tool choice and an unsupported sentence in the final answer. A rule that
+requires the procedure's order would catch the first; the baseline stays at eight rules so that
+its gaps are fixed and pinned by tests.
 """
 
 from __future__ import annotations
