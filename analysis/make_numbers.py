@@ -337,7 +337,7 @@ def emit_paired(emit, paired: dict) -> None:
             )
         for cname, cid in PAIR_CELL_KEY.items():
             cell = table[jid][cid]
-            emit(f"{jname}Pair{cname}", signed(cell["delta"]))
+            emit(f"{jname}Pair{cname}", signed(cell["delta"], 3))
             emit(f"{jname}Pair{cname}Disc", f"{cell['b10']}/{cell['b01']}")
             emit(
                 f"{jname}Pair{cname}CI",
@@ -345,9 +345,6 @@ def emit_paired(emit, paired: dict) -> None:
             )
     for tname, tid in TYPE_KEY.items():
         emit(f"PairN{tname}", str(table["outcome:qwen2.5:14b"][tid]["n"]))
-    out = table["outcome:qwen2.5:14b"]
-    emit("OutcomePairLoud", signed(out["loud"]["delta"], 3))
-    emit("OutcomePairSilent", signed(out["silent"]["delta"], 3))
     gap = pub["contrasts"]["outcome_paired_loud_minus_silent"]
     emit("OutcomePairGap", signed(gap["point"], 3))
     emit("OutcomePairGapCI", signed_ci(*gap["ci"], places=3))
