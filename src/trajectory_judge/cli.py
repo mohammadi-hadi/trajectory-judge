@@ -75,6 +75,39 @@ def build_dataset(n: int, seed: int) -> tuple[list[Trajectory], dict[str, Instan
     return trajectories, by_id
 
 
+def missing_parents(
+    trajectories: list[Trajectory], instances: dict[str, Instance]
+) -> list[Trajectory]:
+    """The clean run of every instance that hosts a fault but has no clean run in the set.
+
+    Comparing a judge's verdict on a fault with its verdict on the clean run the fault was
+    derived from needs both judged. The balanced set takes its clean runs from the first
+    instances, while the fault types that need a restocking fee are hosted further along, so
+    some faults arrive without their parent.
+    """
+    present = {t.trajectory_id for t in trajectories}
+    hosts = sorted({t.instance_id for t in trajectories if t.label.faulty})
+    return [run_oracle(instances[i]) for i in hosts if f"{i}-clean" not in present]
+
+
+def _instances_for(trajectories: list[Trajectory], seed: int) -> dict[str, Instance]:
+    """Regenerate the instances a stored trajectory set was played on (ids are INS-<index>)."""
+    count = 1 + max(int(t.instance_id.split("-")[1]) for t in trajectories)
+    return {i.instance_id: i for i in generate_instances(count, seed=seed)}
+
+
+def _judging_order(trajectories: list[Trajectory], first: list[str]) -> list[Trajectory]:
+    """The named failure types first, in the order given, then everything else as it was."""
+    ranked = [
+        t
+        for name in first
+        for t in trajectories
+        if t.label.failure_type is not None and t.label.failure_type.value == name
+    ]
+    picked = {t.trajectory_id for t in ranked}
+    return ranked + [t for t in trajectories if t.trajectory_id not in picked]
+
+
 def _call_failed(verdict: Verdict) -> bool:
     """Whether the model never answered, as opposed to answering with something unusable.
 
@@ -130,27 +163,55 @@ def run(
     keep_responses: bool = typer.Option(
         False, help="Also append each LLM judge's raw response to responses.jsonl."
     ),
+    with_parents: bool = typer.Option(
+        False, help="Add the clean run of each faulty instance whose clean run is not in the set."
+    ),
+    first: str = typer.Option(
+        "", help="Comma-separated failure types to judge before the rest of the set."
+    ),
+    source: Path | None = typer.Option(
+        None, help="Judge the trajectories.jsonl in this directory instead of building a set."
+    ),
 ) -> None:
     """Judge a freshly built trajectory set. Resumable: already-judged pairs are skipped.
 
     A call that fails outright is reported and left unjudged, so the exit code is non-zero and a
     rerun fills the gap. Three failures in a row stop the run.
     """
-    trajectories, instances = build_dataset(n, seed)
+    order = [name.strip() for name in first.split(",") if name.strip()]
+    unknown = sorted(set(order) - {f.value for f in FailureType})
+    if unknown:
+        raise typer.BadParameter(f"unknown failure types {unknown}", param_hint="--first")
+
+    if source is None:
+        trajectories, instances = build_dataset(n, seed)
+        if with_parents:
+            trajectories = trajectories + missing_parents(trajectories, instances)
+    else:
+        trajectories = store.read_trajectories(source)
+        if not trajectories:
+            raise typer.BadParameter(f"no trajectories in {source}", param_hint="--source")
+        instances = _instances_for(trajectories, seed)
     store.write_trajectories(out, trajectories)
-    store.write_run_meta(
-        out,
-        {
-            "n_requested": n,
-            "n_trajectories": len(trajectories),
-            "judges": judges,
-            "model": model,
-            "seed": seed,
-            "k": k,
-            "selfcons_subset": selfcons_subset,
-        },
-    )
+    meta: dict[str, Any] = {
+        "n_requested": n,
+        "n_trajectories": len(trajectories),
+        "judges": judges,
+        "model": model,
+        "seed": seed,
+        "k": k,
+        "selfcons_subset": selfcons_subset,
+    }
+    # Recorded only when used, so a default run logs exactly what it always has.
+    if with_parents:
+        meta["with_parents"] = True
+    if order:
+        meta["first"] = order
+    if source is not None:
+        meta["source"] = str(source)
+    store.write_run_meta(out, meta)
     typer.echo(f"{len(trajectories)} trajectories -> {out}")
+    trajectories = _judging_order(trajectories, order)
 
     done = store.judged_keys(out)
     unjudged = 0
