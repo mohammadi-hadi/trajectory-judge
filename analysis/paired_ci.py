@@ -782,6 +782,13 @@ def ablation(published_verdicts: list[dict]) -> dict | None:
             repro[name][f] = sum(
                 1 for tid in shared if vmap[(cells[name], tid)][f] == pub[(old, tid)][f]
             )
+        fault_type = {t["trajectory_id"]: t["label"]["failure_type"] for t in trajectories}
+        repro[name]["flips_reply_changed"] = sum(
+            1
+            for tid in shared
+            if vmap[(cells[name], tid)]["faulty"] != pub[(old, tid)]["faulty"]
+            and fault_type.get(tid) in ("premature_stop", "unsupported_claim")
+        )
     if {"A", "Ao"} <= cells.keys():
         same = sum(
             1

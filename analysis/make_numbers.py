@@ -513,6 +513,8 @@ def emit_ablation(emit, abl: dict) -> None:
             ("rationale", "Rationale"),
         ]:
             emit(f"{name}Agree{mname}K", str(repro[short][field]))
+        emit(f"{name}FlipK", str(repro[short]["n"] - repro[short]["faulty"]))
+        emit(f"{name}FlipReplyChangedK", str(repro[short]["flips_reply_changed"]))
     if "schema_swap_identical" in repro:
         emit("AblSchemaIdenticalK", str(repro["schema_swap_identical"]["k"]))
         emit("AblSchemaIdenticalN", str(repro["schema_swap_identical"]["n"]))
@@ -521,6 +523,7 @@ def emit_ablation(emit, abl: dict) -> None:
         emit("AblDPremStepFourK", str(steps.get("4", 0)))
         emit("AblDPremStepThreeK", str(steps.get("3", 0)))
         emit("AblDPremDetectedN", str(sum(steps.values())))
+        emit("AblDPremStepOtherK", str(sum(steps.values()) - steps.get("3", 0) - steps.get("4", 0)))
     for short, rows in abl.get("organic", {}).items():
         name = f"Org{short}"
         emit(f"{name}FlagsFaultyK", str(rows["faulty_flagged"]))
