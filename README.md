@@ -155,7 +155,7 @@ curl -s localhost:8000/v1/judge -H 'content-type: application/json' -d '{
 
 | method | path | what it does |
 |---|---|---|
-| GET | `/healthz` | liveness; reports the build's commit, since the version is pinned |
+| GET | `/healthz` | liveness; reports the build's commit, since the version moves only at a release |
 | GET | `/readyz` | readiness; 503 when the model backend is unreachable |
 | GET | `/v1/judges` | the catalogue: what each judge needs and how many model calls it costs |
 | GET | `/v1/models` | what the backend reports; 200 even when it is down |
@@ -519,7 +519,7 @@ and the software:
   title   = {trajectory-judge: measuring what LLM judges miss when an agent reaches the right answer the wrong way},
   url     = {https://github.com/mohammadi-hadi/trajectory-judge},
   doi     = {10.5281/zenodo.21797926},
-  version = {0.1.0},
+  version = {0.2.0},
   year    = {2026}
 }
 ```
