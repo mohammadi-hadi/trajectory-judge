@@ -478,6 +478,8 @@ def emit_ablation(emit, abl: dict) -> None:
         lo, hi = fa["ci"]
         emit(f"{name}FACI", "---" if hi - lo < 1e-9 else f"[{lo:.2f}, {hi:.2f}]")
         cells = abl["paired"][jid]
+        same = cells["reply_same"]
+        emit(f"{name}SameFlipK", str(same["b10"] + same["b01"]))
         for cname, cid in [
             ("ReplySame", "reply_same"),
             ("ReplyChanged", "reply_changed"),
@@ -524,7 +526,14 @@ def emit_ablation(emit, abl: dict) -> None:
         emit("AblDPremStepThreeK", str(steps.get("3", 0)))
         emit("AblDPremDetectedN", str(sum(steps.values())))
         emit("AblDPremStepOtherK", str(sum(steps.values()) - steps.get("3", 0) - steps.get("4", 0)))
+    detail = abl.get("organic", {}).get("D_detail")
+    if detail:
+        emit("OrgDMissK", str(detail["missed"]))
+        emit("OrgDMissStopAfterLookupK", str(detail["missed_stop_after_lookup"]))
+        emit("OrgDCleanRepeatCallK", str(detail["clean_flagged_repeat_call"]))
     for short, rows in abl.get("organic", {}).items():
+        if short == "D_detail":
+            continue
         name = f"Org{short}"
         emit(f"{name}FlagsFaultyK", str(rows["faulty_flagged"]))
         emit(f"{name}FlagsFaultyN", str(rows["faulty_n"]))

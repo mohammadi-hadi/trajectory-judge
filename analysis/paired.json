@@ -113,6 +113,11 @@
         "clean_n": 47,
         "faulty_flagged": 6,
         "faulty_n": 13
+      },
+      "D_detail": {
+        "clean_flagged_repeat_call": 4,
+        "missed": 7,
+        "missed_stop_after_lookup": 7
       }
     },
     "paired": {

@@ -845,6 +845,25 @@ def ablation(published_verdicts: list[dict]) -> dict | None:
                 "clean_flagged": sum(flagged[ep["trajectory_id"]] for ep in clean_eps),
                 "clean_n": len(clean_eps),
             }
+        # What the step-checking cell flags and misses among the episodes, by tool sequence.
+
+        def calls(ep: dict) -> list[str]:
+            return [st["call"]["tool"] for st in ep["steps"]]
+
+        d_flag = {
+            ep["trajectory_id"]: ov[(ABL["D"], ep["trajectory_id"])]["faulty"] for ep in agent
+        }
+        missed = [ep for ep in faulty if not d_flag[ep["trajectory_id"]]]
+        clean_hits = [ep for ep in clean_eps if d_flag[ep["trajectory_id"]]]
+        out["organic"]["D_detail"] = {
+            "missed": len(missed),
+            "missed_stop_after_lookup": sum(
+                1 for ep in missed if calls(ep) == ["get_customer", "lookup_order", "reply"]
+            ),
+            "clean_flagged_repeat_call": sum(
+                1 for ep in clean_hits if len(calls(ep)) > len(set(calls(ep)))
+            ),
+        }
     return out
 
 
