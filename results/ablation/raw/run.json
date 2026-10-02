@@ -1,0 +1,74 @@
+{
+  "runs": [
+    {
+      "first": [
+        "premature_stop",
+        "unsupported_claim"
+      ],
+      "judges": "stepview-proctask",
+      "k": 3,
+      "model": "qwen2.5:14b",
+      "n_requested": 400,
+      "n_trajectories": 441,
+      "seed": 7,
+      "selfcons_subset": 150,
+      "with_parents": true
+    },
+    {
+      "first": [
+        "premature_stop",
+        "unsupported_claim"
+      ],
+      "judges": "outview-proctask",
+      "k": 3,
+      "model": "qwen2.5:14b",
+      "n_requested": 400,
+      "n_trajectories": 441,
+      "seed": 7,
+      "selfcons_subset": 150,
+      "with_parents": true
+    },
+    {
+      "first": [
+        "premature_stop",
+        "unsupported_claim"
+      ],
+      "judges": "stepview-outtask",
+      "k": 3,
+      "model": "qwen2.5:14b",
+      "n_requested": 400,
+      "n_trajectories": 441,
+      "seed": 7,
+      "selfcons_subset": 150,
+      "with_parents": true
+    },
+    {
+      "first": [
+        "premature_stop",
+        "unsupported_claim"
+      ],
+      "judges": "outview-outtask",
+      "k": 3,
+      "model": "qwen2.5:14b",
+      "n_requested": 400,
+      "n_trajectories": 441,
+      "seed": 7,
+      "selfcons_subset": 150,
+      "with_parents": true
+    },
+    {
+      "first": [
+        "premature_stop",
+        "unsupported_claim"
+      ],
+      "judges": "outcome",
+      "k": 3,
+      "model": "qwen2.5:14b",
+      "n_requested": 400,
+      "n_trajectories": 441,
+      "seed": 7,
+      "selfcons_subset": 150,
+      "with_parents": true
+    }
+  ]
+}

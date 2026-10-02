@@ -1,0 +1,15 @@
+2026-10-01T18:50:07Z start engine={"version":"0.33.3"} 7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6
+2026-10-01T18:50:07Z code=/Users/hadimohammadi/Documents/tj-run/src/trajectory_judge/__init__.py
+2026-10-01T18:50:08Z D' stepview-proctask attempt 1 engine={"version":"0.33.3"} 7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6
+2026-10-01T20:44:17Z D' stepview-proctask done engine={"version":"0.33.3"} 7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6
+2026-10-01T20:44:17Z B outview-proctask attempt 1 engine={"version":"0.33.3"} 7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6
+2026-10-01T22:21:53Z B outview-proctask done engine={"version":"0.33.3"} 7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6
+2026-10-01T22:21:53Z C stepview-outtask attempt 1 engine={"version":"0.33.3"} 7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6
+2026-10-01T22:54:44Z C stepview-outtask done engine={"version":"0.33.3"} 7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6
+2026-10-01T22:54:44Z A' outview-outtask attempt 1 engine={"version":"0.33.3"} 7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6
+2026-10-01T23:24:41Z A' outview-outtask done engine={"version":"0.33.3"} 7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6
+2026-10-01T23:24:41Z A outcome, own schema attempt 1 engine={"version":"0.33.3"} 7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6
+2026-10-01T23:53:02Z A outcome, own schema done engine={"version":"0.33.3"} 7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6
+2026-10-01T23:53:02Z agent episodes attempt 1 engine={"version":"0.33.3"} 7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6
+2026-10-02T00:13:05Z agent episodes done engine={"version":"0.33.3"} 7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6
+2026-10-02T00:13:05Z all done

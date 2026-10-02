@@ -14,7 +14,7 @@ MODEL="qwen2.5:14b"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 OUT="$HERE/raw"
 ORGANIC="$HERE/organic"
-ENGINE_LOG="$HERE/ENV.log"
+ENGINE_LOG="$HERE/engine.txt"
 RUN=("$PYTHON" -m trajectory_judge.cli run --model "$MODEL" --seed 7 --keep-responses)
 
 engine() {
