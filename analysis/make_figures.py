@@ -101,6 +101,11 @@ def load():
     return trajectories, verdicts, ci
 
 
+def signed(x: float) -> str:
+    """Two signed decimals with a true minus sign."""
+    return f"{x:+.2f}".replace("-", "\u2212")
+
+
 def whisker(cell: dict) -> tuple[float, float] | None:
     lo, hi, point = cell["lo"], cell["hi"], cell["point"]
     if hi - lo < 1e-9:
@@ -108,50 +113,263 @@ def whisker(cell: dict) -> tuple[float, float] | None:
     return point - lo, hi - point
 
 
-def fig_silent_vs_loud(ci: dict) -> None:
-    fig, ax = plt.subplots(figsize=(5.4, 2.9))
-    x = np.arange(len(JUDGES))
-    width = 0.32
-    for offset, key, color, label in [
-        (-0.18, "loud_recall", LOUD_BAR, "loud (answer broke)"),
-        (0.18, "silent_recall", SILENT_BAR, "silent (answer survived)"),
+def paired_rates(trajectories, verdicts) -> dict[str, dict[str, tuple[float, float, int]]]:
+    """Per judge and stratum: share of faults flagged, share of their clean parents flagged.
+
+    Only faults whose clean parent was judged are used, and a parent counts once per fault it
+    hosts, so the difference of the two shares is the paired discrimination.
+    """
+    by_id = {t["trajectory_id"]: t for t in trajectories}
+    pairs = []
+    for t in trajectories:
+        lab = t["label"]
+        parent = f"{t['instance_id']}-clean"
+        if lab["faulty"] and parent in by_id:
+            pairs.append((t["trajectory_id"], parent, not lab["outcome_correct"]))
+    rates: dict[str, dict[str, tuple[float, float, int]]] = {}
+    for j in JUDGES:
+        rates[j] = {}
+        for stratum, loud in (("silent", False), ("loud", True)):
+            subset = [(f, p) for f, p, is_loud in pairs if is_loud == loud]
+            fault = float(np.mean([verdicts[j][f]["faulty"] for f, _ in subset]))
+            parent = float(np.mean([verdicts[j][p]["faulty"] for _, p in subset]))
+            rates[j][stratum] = (fault, parent, len(subset))
+    return rates
+
+
+def fig_silent_vs_loud(trajectories, verdicts) -> None:
+    """Silent and loud faults, each against the clean runs they were derived from.
+
+    Per judge a hollow circle marks how often it flags the clean parents and a filled marker
+    how often it flags the faults; the segment between them is the paired discrimination.
+    Recall alone is the filled marker, which is how a judge that flags everything looks
+    perfect. Identity is carried by the row label, so colour is never needed to read it.
+    """
+    rates = paired_rates(trajectories, verdicts)
+    fig, axes = plt.subplots(1, 2, figsize=(5.5, 2.35), sharey=True)
+    rows = list(range(len(JUDGES)))[::-1]
+    for ax, stratum, title in [
+        (axes[0], "silent", "silent faults"),
+        (axes[1], "loud", "loud faults"),
     ]:
-        points = [ci["judges"][j][key]["point"] for j in JUDGES]
-        bars = ax.bar(x + offset, points, width, color=color, label=label, zorder=2)
-        errs = [whisker(ci["judges"][j][key]) for j in JUDGES]
-        for xi, point, err in zip(x + offset, points, errs):
-            if err is not None:
-                ax.errorbar(
-                    xi, point, yerr=[[err[0]], [err[1]]],
-                    fmt="none", ecolor=INK, elinewidth=0.7, capsize=1.6, zorder=3,
-                )
-        for bar, point in zip(bars, points):
-            ax.text(
-                bar.get_x() + bar.get_width() / 2, 0.02, f"{point:.2f}".lstrip("0"),
-                ha="center", va="bottom", fontsize=6.4, color="white"
-                if point > 0.12 else INK, zorder=4,
+        n = rates[JUDGES[0]][stratum][2]
+        for y, j in zip(rows, JUDGES, strict=True):
+            fault, parent, _ = rates[j][stratum]
+            ax.plot(
+                [parent, fault], [y, y], color=COLOR[j], lw=2.0, zorder=2, solid_capstyle="round"
             )
-    fa = [ci["judges"][j]["false_alarm_rate"]["point"] for j in JUDGES]
-    ax.scatter(
-        x, fa, marker="x", s=42, color=ALARM, linewidths=1.6,
-        label="false alarms (clean)", zorder=5,
+            ax.scatter(
+                [parent], [y], s=62, facecolors="white", edgecolors=INK, linewidths=0.9, zorder=3
+            )
+            ax.scatter(
+                [fault],
+                [y],
+                s=20,
+                marker=MARKER[j],
+                color=COLOR[j],
+                edgecolors=INK,
+                linewidths=0.5,
+                zorder=4,
+            )
+            ax.text(
+                1.04,
+                y,
+                signed(fault - parent),
+                va="center",
+                ha="left",
+                fontsize=6.8,
+                color=INK,
+                transform=ax.get_yaxis_transform(),
+            )
+        ax.set_xlim(-0.07, 1.07)
+        ax.set_xticks([0, 0.5, 1.0], ["0", ".5", "1"])
+        ax.xaxis.grid(True, zorder=0)
+        ax.set_title(f"{title} ({n} pairs)", fontsize=7.6, loc="left")
+        ax.text(
+            1.04,
+            1.0,
+            "\u0394",
+            va="bottom",
+            ha="left",
+            fontsize=7.2,
+            color=INK,
+            transform=ax.transAxes,
+        )
+        ax.set_xlabel("share flagged", fontsize=7.6)
+        ax.spines["left"].set_visible(False)
+        ax.tick_params(axis="y", length=0)
+    axes[0].set_yticks(rows, [SHORT[j] for j in JUDGES], fontsize=7.2)
+    handles = [
+        plt.Line2D(
+            [],
+            [],
+            marker="o",
+            ls="",
+            markersize=7,
+            markerfacecolor="white",
+            markeredgecolor=INK,
+            label="clean parents flagged",
+        ),
+        plt.Line2D(
+            [],
+            [],
+            marker="s",
+            ls="",
+            markersize=4.5,
+            markerfacecolor="#777777",
+            markeredgecolor=INK,
+            label="faults flagged (filled marker)",
+        ),
+    ]
+    fig.legend(
+        handles=handles,
+        loc="lower center",
+        ncols=2,
+        fontsize=6.9,
+        bbox_to_anchor=(0.55, -0.02),
+        handletextpad=0.3,
+        columnspacing=1.2,
     )
-    ax.set_xticks(x, [SHORT[j].replace(" (", "\n(") for j in JUDGES], fontsize=7.4)
-    ax.set_ylim(0, 1.14)
-    ax.set_ylabel("recall")
-    ax.yaxis.grid(True, zorder=0)
-    ax.legend(loc="upper left", bbox_to_anchor=(0.0, 1.04), fontsize=6.9, ncols=3,
-              columnspacing=1.0, handletextpad=0.4)
-    fig.tight_layout()
+    fig.tight_layout(rect=(0, 0.07, 0.97, 1))
     fig.savefig(FIGS / "fig2_silent_vs_loud.pdf")
+    plt.close(fig)
+
+
+# Fault types in the order of the by-type figure: the four that leave the final reply
+# unchanged, then the two that change it. The tag says whether the environment outcome
+# survives the fault (a silent fault), does not (a loud one), or depends on the scenario.
+BY_TYPE_ROWS = [
+    ("wrong_tool", "silent"),
+    ("hallucinated_argument", "silent"),
+    ("skipped_precondition", "silent or loud"),
+    ("ignored_observation", "loud"),
+    ("unsupported_claim", "silent"),
+    ("premature_stop", "loud"),
+]
+N_REPLY_UNCHANGED = 4
+
+
+def paired_rates_by_type(trajectories, verdicts, judges) -> dict[str, dict[str, tuple]]:
+    """Per judge and fault type: share of faults flagged, share of their parents flagged, pairs."""
+    by_id = {t["trajectory_id"]: t for t in trajectories}
+    rates: dict[str, dict[str, tuple]] = {j: {} for j in judges}
+    for ftype, _ in BY_TYPE_ROWS:
+        pairs = [
+            (t["trajectory_id"], f"{t['instance_id']}-clean")
+            for t in trajectories
+            if t["label"]["failure_type"] == ftype and f"{t['instance_id']}-clean" in by_id
+        ]
+        for j in judges:
+            fault = float(np.mean([verdicts[j][f]["faulty"] for f, _ in pairs]))
+            parent = float(np.mean([verdicts[j][p]["faulty"] for _, p in pairs]))
+            rates[j][ftype] = (fault, parent, len(pairs))
+    return rates
+
+
+def fig_recall_vs_parent(trajectories, verdicts) -> None:
+    """Each fault type against its clean parents, for the two single-pass 14B judges.
+
+    A ring marks how often the judge flags the clean parents and a filled marker how often it
+    flags the faults derived from them; where the two coincide the judge's recall is its flag
+    rate on correct runs. The band groups the four types that leave the final reply unchanged,
+    on which the reply-only judge receives its parent's input.
+    """
+    judges = ["outcome:qwen2.5:14b", "step:qwen2.5:14b"]
+    titles = {
+        "outcome:qwen2.5:14b": "outcome judge",
+        "step:qwen2.5:14b": "step judge",
+    }
+    rates = paired_rates_by_type(trajectories, verdicts, judges)
+    # Row positions, with a gap between the reply-unchanged and reply-changed groups.
+    ys = [5.5, 4.5, 3.5, 2.5, 1.0, 0.0]
+    fig, axes = plt.subplots(1, 2, figsize=(5.5, 2.05), sharey=True)
+    for ax, j in zip(axes, judges, strict=True):
+        ax.axhspan(1.95, 6.3, color="#e6e9ee", zorder=0, lw=0)
+        for y, (ftype, _) in zip(ys, BY_TYPE_ROWS, strict=True):
+            fault, parent, _ = rates[j][ftype]
+            ax.plot(
+                [parent, fault], [y, y], color=COLOR[j], lw=2.0, zorder=2, solid_capstyle="round"
+            )
+            ax.scatter(
+                [parent], [y], s=62, facecolors="white", edgecolors=INK, linewidths=0.9, zorder=3
+            )
+            ax.scatter(
+                [fault],
+                [y],
+                s=20,
+                marker=MARKER[j],
+                color=COLOR[j],
+                edgecolors=INK,
+                linewidths=0.4,
+                zorder=4,
+            )
+            ax.text(
+                1.05,
+                y,
+                signed(fault - parent),
+                va="center",
+                ha="left",
+                fontsize=6.8,
+                color=INK,
+                transform=ax.get_yaxis_transform(),
+            )
+        ax.set_xlim(-0.07, 1.07)
+        ax.set_ylim(-0.6, 6.3)
+        ax.set_xticks([0, 0.5, 1.0], ["0", ".5", "1"], fontsize=7.5)
+        ax.xaxis.grid(True, zorder=0)
+        ax.set_title(titles[j], fontsize=7.6, loc="left")
+        ax.text(
+            1.05,
+            1.0,
+            "\u0394",
+            va="bottom",
+            ha="left",
+            fontsize=7.2,
+            color=INK,
+            transform=ax.transAxes,
+        )
+        ax.set_xlabel("share flagged", fontsize=7.6)
+        ax.spines["left"].set_visible(False)
+        ax.tick_params(axis="y", length=0)
+    axes[0].set_yticks(ys, [t for t, _ in BY_TYPE_ROWS], fontsize=6.9, family="monospace")
+    # Third text column: what the fault does to the environment outcome.
+    for y, (_, tag) in zip(ys, BY_TYPE_ROWS, strict=True):
+        axes[1].text(
+            1.31,
+            y,
+            tag,
+            va="center",
+            ha="left",
+            fontsize=6.6,
+            color="#555555",
+            transform=axes[1].get_yaxis_transform(),
+        )
+    axes[1].text(
+        1.31,
+        1.0,
+        "fault is",
+        va="bottom",
+        ha="left",
+        fontsize=7.0,
+        color=INK,
+        transform=axes[1].transAxes,
+    )
+    # Group labels go in the left panel, where the coincident marks are the message and the
+    # area left of the rings is empty. The caption explains ring and marker, so no legend.
+    for y, text in ((6.02, "reply unchanged"), (1.5, "reply changed")):
+        axes[0].text(
+            -0.05, y, text, va="center", ha="left", fontsize=6.8, color=INK, style="italic"
+        )
+    # Fixed margins: the text columns sit outside the axes, which tight_layout would shrink.
+    fig.subplots_adjust(left=0.235, right=0.80, top=0.90, bottom=0.20, wspace=0.40)
+    fig.savefig(FIGS / "fig_recall_vs_parent.pdf")
     plt.close(fig)
 
 
 def reliability(trajectories, verdicts, judge) -> list[tuple[float, float, int]]:
     label = {t["trajectory_id"]: t["label"] for t in trajectories}
     pairs = [
-        (v["confidence"], label[tid]["faulty"] == v["faulty"])
-        for tid, v in verdicts[judge].items()
+        (v["confidence"], label[tid]["faulty"] == v["faulty"]) for tid, v in verdicts[judge].items()
     ]
     curve = []
     for b in range(10):
@@ -182,31 +400,54 @@ def fig_calibration(trajectories, verdicts) -> None:
         sizes = [14 + 130 * c / max_count for _, _, c in curve]
         recessive = j == "programmatic"
         ax.plot(
-            xs, ys, lw=1.1, color=COLOR[j], zorder=2,
-            ls="--" if recessive else "-", alpha=0.85 if recessive else 1.0,
+            xs,
+            ys,
+            lw=1.1,
+            color=COLOR[j],
+            zorder=2,
+            ls="--" if recessive else "-",
+            alpha=0.85 if recessive else 1.0,
         )
         ax.scatter(
-            xs, ys, s=sizes, marker=MARKER[j], zorder=3,
+            xs,
+            ys,
+            s=sizes,
+            marker=MARKER[j],
+            zorder=3,
             facecolors="white" if recessive else COLOR[j],
-            edgecolors=COLOR[j], linewidths=0.9,
+            edgecolors=COLOR[j],
+            linewidths=0.9,
             label=SHORT[j] + (" (hand-set confidence)" if recessive else ""),
         )
         for cx, cy, count in curve:
             if count <= 5:  # tiny bins read as dramatic dives; say how tiny they are
                 ax.annotate(
-                    f"n={count}", xy=(cx, cy), xytext=(4, -9),
-                    textcoords="offset points", fontsize=6.2, color="#666666",
+                    f"n={count}",
+                    xy=(cx, cy),
+                    xytext=(4, -9),
+                    textcoords="offset points",
+                    fontsize=6.2,
+                    color="#666666",
                 )
     # Direct labels on the two lines the analysis discusses most.
     out_curve = curves["outcome:qwen2.5:14b"]
     ax.annotate(
-        "outcome (14B)", xy=out_curve[-1][:2], xytext=(6, -12),
-        textcoords="offset points", fontsize=7.2, color=INK,
+        "outcome (14B)",
+        xy=out_curve[-1][:2],
+        xytext=(6, -12),
+        textcoords="offset points",
+        fontsize=7.2,
+        color=INK,
     )
     step_curve = curves["step:qwen2.5:14b"]
     ax.annotate(
-        "step (14B)", xy=step_curve[-1][:2], xytext=(6, 4),
-        textcoords="offset points", fontsize=7.2, color=INK,
+        "step (14B)",
+        xy=step_curve[0][:2],
+        xytext=(-6, -2),
+        ha="right",
+        textcoords="offset points",
+        fontsize=7.2,
+        color=INK,
     )
     ax.set_xlim(0.45, 1.06)
     ax.set_ylim(-0.02, 1.06)
@@ -244,7 +485,12 @@ def fig_confusion(trajectories, verdicts) -> None:
             v = matrix[r, c]
             if v:
                 ax.text(
-                    c, r, str(v), ha="center", va="center", fontsize=7,
+                    c,
+                    r,
+                    str(v),
+                    ha="center",
+                    va="center",
+                    fontsize=7,
                     color="white" if v > 28 else INK,
                 )
     for spine in ax.spines.values():
@@ -258,7 +504,8 @@ def fig_confusion(trajectories, verdicts) -> None:
 def main() -> None:
     FIGS.mkdir(parents=True, exist_ok=True)
     trajectories, verdicts, ci = load()
-    fig_silent_vs_loud(ci)
+    fig_recall_vs_parent(trajectories, verdicts)
+    fig_silent_vs_loud(trajectories, verdicts)
     fig_calibration(trajectories, verdicts)
     fig_confusion(trajectories, verdicts)
     for f in sorted(FIGS.glob("*.pdf")):

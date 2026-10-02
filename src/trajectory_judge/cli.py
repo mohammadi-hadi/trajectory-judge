@@ -9,8 +9,10 @@ confusion matrix that says more about the generator than about any judge.
 
 from __future__ import annotations
 
+import hashlib
 import random
 from pathlib import Path
+from typing import Any
 
 import typer
 
@@ -19,18 +21,25 @@ from trajectory_judge.agents.oracle import run_oracle
 from trajectory_judge.env.world import Instance, generate_instances
 from trajectory_judge.judges import (
     Judge,
+    LlmJudge,
     MockJudge,
     OutcomeJudge,
     ProgrammaticJudge,
     SelfConsistencyJudge,
     StepRubricJudge,
 )
+from trajectory_judge.judges.ablation import ABLATION_JUDGES
+from trajectory_judge.judges.llm import UNPARSEABLE
+from trajectory_judge.judges.ollama_client import Generation
 from trajectory_judge.mutate import mutate
-from trajectory_judge.trace import FailureType, Trajectory
+from trajectory_judge.trace import FailureType, Trajectory, Verdict
 
 app = typer.Typer(add_completion=False, help=__doc__)
 
 DEFAULT_JUDGES = "programmatic,outcome,step"
+
+#: Failed calls in a row that end a run. One is a hiccup; three is a server that has gone away.
+MAX_CONSECUTIVE_FAILURES = 3
 
 
 def build_dataset(n: int, seed: int) -> tuple[list[Trajectory], dict[str, Instance]]:
@@ -58,12 +67,70 @@ def build_dataset(n: int, seed: int) -> tuple[list[Trajectory], dict[str, Instan
                 err=True,
             )
 
-    # Shuffle, deterministically, so that *any prefix is a stratified sample*. Built in order the
-    # set is 100 clean then 50 of each type in turn, which makes `trajectories[:150]` all-clean
-    # plus one failure type — a subset judge scored on it would report a loud recall of zero
-    # because it never saw a loud fault. That is a bug that looks like a finding.
+    # Shuffle, deterministically, so that a prefix mixes clean runs and every failure type. Built
+    # in order, the set is 100 clean then 50 of each type in turn, which makes `trajectories[:150]`
+    # all clean plus one failure type: a subset judge scored on it would report a loud recall of
+    # zero because it never saw a loud fault. A shuffled prefix is mixed, not stratified.
     random.Random(f"order-{seed}").shuffle(trajectories)
     return trajectories, by_id
+
+
+def missing_parents(
+    trajectories: list[Trajectory], instances: dict[str, Instance]
+) -> list[Trajectory]:
+    """The clean run of every instance that hosts a fault but has no clean run in the set.
+
+    Comparing a judge's verdict on a fault with its verdict on the clean run the fault was
+    derived from needs both judged. The balanced set takes its clean runs from the first
+    instances, while the fault types that need a restocking fee are hosted further along, so
+    some faults arrive without their parent.
+    """
+    present = {t.trajectory_id for t in trajectories}
+    hosts = sorted({t.instance_id for t in trajectories if t.label.faulty})
+    return [run_oracle(instances[i]) for i in hosts if f"{i}-clean" not in present]
+
+
+def _instances_for(trajectories: list[Trajectory], seed: int) -> dict[str, Instance]:
+    """Regenerate the instances a stored trajectory set was played on (ids are INS-<index>)."""
+    count = 1 + max(int(t.instance_id.split("-")[1]) for t in trajectories)
+    return {i.instance_id: i for i in generate_instances(count, seed=seed)}
+
+
+def _judging_order(trajectories: list[Trajectory], first: list[str]) -> list[Trajectory]:
+    """The named failure types first, in the order given, then everything else as it was."""
+    ranked = [
+        t
+        for name in first
+        for t in trajectories
+        if t.label.failure_type is not None and t.label.failure_type.value == name
+    ]
+    picked = {t.trajectory_id for t in ranked}
+    return ranked + [t for t in trajectories if t.trajectory_id not in picked]
+
+
+def _call_failed(verdict: Verdict) -> bool:
+    """Whether the model never answered, as opposed to answering with something unusable.
+
+    Such a verdict is not stored. It says "clean" at chance only because nothing came back, and
+    once on disk the resume logic would treat the trajectory as judged: a server that died at 2am
+    would leave the rest of the night's queue recorded as clean verdicts.
+    """
+    return verdict.error is not None and verdict.error != UNPARSEABLE
+
+
+def _response_row(judge: LlmJudge, trajectory: Trajectory, response: Generation) -> dict[str, Any]:
+    """The raw response, keyed like its verdict, with a hash of the exact prompt it answered."""
+    prompt = judge.prompt(trajectory).encode("utf-8")
+    return {
+        "trajectory_id": trajectory.trajectory_id,
+        "judge_id": judge.judge_id,
+        "prompt_sha256": hashlib.sha256(prompt).hexdigest(),
+        "text": response.text,
+        "prompt_tokens": response.prompt_tokens,
+        "completion_tokens": response.completion_tokens,
+        "latency_s": response.latency_s,
+        "error": response.error,
+    }
 
 
 def _make_judge(name: str, model: str, k: int, seed: int) -> Judge:
@@ -77,6 +144,8 @@ def _make_judge(name: str, model: str, k: int, seed: int) -> Judge:
         return StepRubricJudge(model, seed=seed)
     if name == "selfcons":
         return SelfConsistencyJudge(model, k=k, base_seed=seed)
+    if name in ABLATION_JUDGES:
+        return ABLATION_JUDGES[name](model, seed=seed)
     raise typer.BadParameter(f"unknown judge {name!r}")
 
 
@@ -91,25 +160,61 @@ def run(
         150, help="Trajectories the self-consistency judge covers, since it costs k times more."
     ),
     out: Path = typer.Option(Path("results/raw"), help="Where raw verdicts are appended."),
+    keep_responses: bool = typer.Option(
+        False, help="Also append each LLM judge's raw response to responses.jsonl."
+    ),
+    with_parents: bool = typer.Option(
+        False, help="Add the clean run of each faulty instance whose clean run is not in the set."
+    ),
+    first: str = typer.Option(
+        "", help="Comma-separated failure types to judge before the rest of the set."
+    ),
+    source: Path | None = typer.Option(
+        None, help="Judge the trajectories.jsonl in this directory instead of building a set."
+    ),
 ) -> None:
-    """Judge a freshly built trajectory set. Resumable: already-judged pairs are skipped."""
-    trajectories, instances = build_dataset(n, seed)
+    """Judge a freshly built trajectory set. Resumable: already-judged pairs are skipped.
+
+    A call that fails outright is reported and left unjudged, so the exit code is non-zero and a
+    rerun fills the gap. Three failures in a row stop the run.
+    """
+    order = [name.strip() for name in first.split(",") if name.strip()]
+    unknown = sorted(set(order) - {f.value for f in FailureType})
+    if unknown:
+        raise typer.BadParameter(f"unknown failure types {unknown}", param_hint="--first")
+
+    if source is None:
+        trajectories, instances = build_dataset(n, seed)
+        if with_parents:
+            trajectories = trajectories + missing_parents(trajectories, instances)
+    else:
+        trajectories = store.read_trajectories(source)
+        if not trajectories:
+            raise typer.BadParameter(f"no trajectories in {source}", param_hint="--source")
+        instances = _instances_for(trajectories, seed)
     store.write_trajectories(out, trajectories)
-    store.write_run_meta(
-        out,
-        {
-            "n_requested": n,
-            "n_trajectories": len(trajectories),
-            "judges": judges,
-            "model": model,
-            "seed": seed,
-            "k": k,
-            "selfcons_subset": selfcons_subset,
-        },
-    )
+    meta: dict[str, Any] = {
+        "n_requested": n,
+        "n_trajectories": len(trajectories),
+        "judges": judges,
+        "model": model,
+        "seed": seed,
+        "k": k,
+        "selfcons_subset": selfcons_subset,
+    }
+    # Recorded only when used, so a default run logs exactly what it always has.
+    if with_parents:
+        meta["with_parents"] = True
+    if order:
+        meta["first"] = order
+    if source is not None:
+        meta["source"] = str(source)
+    store.write_run_meta(out, meta)
     typer.echo(f"{len(trajectories)} trajectories -> {out}")
+    trajectories = _judging_order(trajectories, order)
 
     done = store.judged_keys(out)
+    unjudged = 0
     for name in [j.strip() for j in judges.split(",") if j.strip()]:
         judge = _make_judge(name, model, k, seed)
         targets = trajectories[:selfcons_subset] if name == "selfcons" else trajectories
@@ -117,11 +222,34 @@ def run(
         typer.echo(
             f"{judge.judge_id}: {len(pending)} to judge ({len(targets) - len(pending)} cached)"
         )
+        streak = 0
         for index, trajectory in enumerate(pending, start=1):
-            verdict = judge.judge(trajectory, instances[trajectory.instance_id])
-            store.append_verdict(out, verdict)
+            instance = instances[trajectory.instance_id]
+            if keep_responses and isinstance(judge, LlmJudge):
+                verdict, response = judge.judge_with_response(trajectory, instance)
+                if not _call_failed(verdict):
+                    store.append_response(out, _response_row(judge, trajectory, response))
+            else:
+                verdict = judge.judge(trajectory, instance)
+            if verdict.error is None:
+                streak = 0
+            else:
+                streak += 1
+                typer.echo(f"  {trajectory.trajectory_id}: {verdict.error}", err=True)
+            if _call_failed(verdict):
+                unjudged += 1
+            else:
+                store.append_verdict(out, verdict)
+            if streak >= MAX_CONSECUTIVE_FAILURES:
+                typer.echo(
+                    f"stopping: {streak} failed calls in a row from {judge.judge_id}", err=True
+                )
+                raise typer.Exit(2)
             if index % 25 == 0 or index == len(pending):
                 typer.echo(f"  {index}/{len(pending)}")
+    if unjudged:
+        typer.echo(f"{unjudged} calls failed and were not stored; rerun to judge them", err=True)
+        raise typer.Exit(3)
 
 
 @app.command()

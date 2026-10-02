@@ -15,8 +15,8 @@ LABEL org.opencontainers.image.source="https://github.com/mohammadi-hadi/traject
       org.opencontainers.image.description="How much an LLM judge misses when an agent reaches the right answer the wrong way" \
       org.opencontainers.image.licenses="MIT"
 
-# __version__ is pinned at 0.1.0 while the repo moves on, so /healthz reports the commit
-# instead: a version that cannot change is not a deploy identifier.
+# __version__ changes only at a release while the repo moves on, so /healthz reports the commit
+# instead: a version that moves only at a release is not a deploy identifier.
 ARG TJ_GIT_SHA=unknown
 ENV TJ_GIT_SHA=${TJ_GIT_SHA} \
     PYTHONUNBUFFERED=1 \

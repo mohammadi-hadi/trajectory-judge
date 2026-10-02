@@ -92,6 +92,31 @@ jobs:
           fi
           trajectory-judge report --raw results/raw --out results
           git diff --exit-code -- results/tables
+      - name: Rebuild the paper's analysis from committed raw verdicts
+        # data/ holds the files the analysis reads, as flat-named copies of results/. Each copy
+        # must equal its source, and the committed intervals, paired estimates and macros must
+        # be exactly what those files produce.
+        run: |
+          while read -r copy source; do
+            cmp "data/$copy" "$source"
+          done <<'EOF'
+          verdicts.jsonl results/raw/verdicts.jsonl
+          trajectories.jsonl results/raw/trajectories.jsonl
+          run.json results/raw/run.json
+          agent_trajectories.jsonl results/agent/trajectories.jsonl
+          ablation_verdicts.jsonl results/ablation/raw/verdicts.jsonl
+          ablation_trajectories.jsonl results/ablation/raw/trajectories.jsonl
+          ablation_responses.jsonl results/ablation/raw/responses.jsonl
+          ablation_run.json results/ablation/raw/run.json
+          ablation_engine.txt results/ablation/engine.txt
+          organic_verdicts.jsonl results/ablation/organic/verdicts.jsonl
+          organic_responses.jsonl results/ablation/organic/responses.jsonl
+          organic_run.json results/ablation/organic/run.json
+          EOF
+          python analysis/bootstrap_ci.py
+          python analysis/paired_ci.py
+          python analysis/make_numbers.py --out analysis/numbers.tex
+          git diff --exit-code -- analysis/ci.json analysis/paired.json analysis/numbers.tex
 
   bench:
     # Not a performance gate. The ceilings sit roughly an order of magnitude above what is

@@ -18,7 +18,7 @@ Strata each judge actually saw:
 | `step:llama3.1:8b` | 100 | 175 | 125 |
 | `selfcons3:qwen2.5:14b` | 100 | 175 | 125 |
 
-A *silent* fault left the customer-visible outcome correct; a *loud* one did not.
+A *silent* fault left the environment outcome (the refund or escalation) correct; a *loud* one did not. Reply text is not part of the outcome.
 
 `n/a` under step localisation means the judge has no step field to fill: the outcome-only judge never sees the steps, so it is not asked to name one.
 

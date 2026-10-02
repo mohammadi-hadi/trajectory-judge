@@ -1,12 +1,16 @@
-"""Emit paper/numbers.tex: every number the paper quotes, as a LaTeX macro.
+"""Emit numbers.tex: every number the paper quotes, as a LaTeX macro.
 
-Reads analysis/ci.json plus the raw JSONL and writes one \\newcommand per value,
-so no result number is ever typed by hand in the prose. Deterministic; rerunning
-produces a byte-identical file.
+Reads analysis/ci.json, analysis/paired.json and the raw JSONL and writes one
+\\newcommand per value, so no result number is ever typed by hand in the prose.
+Deterministic; rerunning produces a byte-identical file.
+
+By default the file goes next to the paper's main.tex. With --out it goes anywhere:
+`--out analysis/numbers.tex` rebuilds the copy committed in the code repository.
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 
@@ -51,7 +55,7 @@ def ci_str(cell: dict, places: int = 2) -> str:
     return f"[{cell['lo']:.{places}f}, {cell['hi']:.{places}f}]"
 
 
-def main() -> None:
+def main(out: Path = OUT) -> None:
     ci = json.loads((ROOT / "analysis" / "ci.json").read_text())
     trajectories = [
         json.loads(line) for line in (DATA / "trajectories.jsonl").read_text().splitlines()
@@ -94,8 +98,8 @@ def main() -> None:
         ("DeltaSelfconsStepExact", "selfcons_minus_step_step_exact"),
     ]:
         d = ci["deltas"][key]
-        emit(dname, f"{d['point']:+.3f}")
-        emit(f"{dname}CI", f"[{d['lo']:+.3f}, {d['hi']:+.3f}]")
+        emit(dname, signed(d["point"], 3))
+        emit(f"{dname}CI", signed_ci(d["lo"], d["hi"], places=3))
 
     # Counts and derived quantities, recomputed from the raw files.
     by_judge: dict[str, list[dict]] = {}
@@ -114,9 +118,9 @@ def main() -> None:
     outcome = by_judge["outcome:qwen2.5:14b"]
     conf92 = sum(1 for v in outcome if abs(v["confidence"] - 0.92) < 1e-9)
     emit("OutcomeConfNinetyTwo", str(conf92))
-    pooled = sum(
-        v["faulty"] for v in outcome if label[v["trajectory_id"]]["faulty"]
-    ) / sum(1 for t in trajectories if t["label"]["faulty"])
+    pooled = sum(v["faulty"] for v in outcome if label[v["trajectory_id"]]["faulty"]) / sum(
+        1 for t in trajectories if t["label"]["faulty"]
+    )
     emit("OutcomePooledRecall", fmt(pooled, 2))
 
     sc = by_judge["selfcons3:qwen2.5:14b"]
@@ -148,18 +152,13 @@ def main() -> None:
 
     # Organic agent episodes.
     agent = [
-        json.loads(line)
-        for line in (DATA / "agent_trajectories.jsonl").read_text().splitlines()
+        json.loads(line) for line in (DATA / "agent_trajectories.jsonl").read_text().splitlines()
     ]
     a_faulty = [t for t in agent if t["label"]["faulty"]]
     a_wrong = [t for t in agent if not t["label"]["outcome_correct"]]
-    escalates = sum(
-        1 for t in agent for s in t["steps"] if s["call"]["tool"] == "escalate"
-    )
+    escalates = sum(1 for t in agent for s in t["steps"] if s["call"]["tool"] == "escalate")
     eligibility = sum(
-        1
-        for t in agent
-        if any(s["call"]["tool"] == "check_eligibility" for s in t["steps"])
+        1 for t in agent if any(s["call"]["tool"] == "check_eligibility" for s in t["steps"])
     )
     emit("AgentN", str(len(agent)))
     emit("AgentFaulty", str(len(a_faulty)))
@@ -171,7 +170,9 @@ def main() -> None:
     # Rounded percentage forms for the abstract, and the two quoted confidences.
     j = ci["judges"]
     emit("OutcomeLoudPct", f"{round(j['outcome:qwen2.5:14b']['loud_recall']['point'] * 100)}\\%")
-    emit("OutcomeSilentPct", f"{round(j['outcome:qwen2.5:14b']['silent_recall']['point'] * 100)}\\%")
+    emit(
+        "OutcomeSilentPct", f"{round(j['outcome:qwen2.5:14b']['silent_recall']['point'] * 100)}\\%"
+    )
     emit("OutcomeFAPct", f"{round(j['outcome:qwen2.5:14b']['false_alarm_rate']['point'] * 100)}\\%")
     emit("StepQSilentPct", f"{round(j['step:qwen2.5:14b']['silent_recall']['point'] * 100)}\\%")
     emit(
@@ -179,7 +180,8 @@ def main() -> None:
         f"{round((1 - j['step:qwen2.5:14b']['recall_unsupported_claim']['point']) * 100)}\\%",
     )
     case = next(
-        v for v in by_judge["step:qwen2.5:14b"]
+        v
+        for v in by_judge["step:qwen2.5:14b"]
         if v["trajectory_id"] == "INS-00000-unsupported_claim"
     )
     emit("CaseConf", f"{case['confidence']:.2f}")
@@ -212,8 +214,10 @@ def main() -> None:
         for v in by_judge[jid]:
             lab = label[v["trajectory_id"]]
             if (
-                lab["faulty"] and v["faulty"]
-                and lab["failure_step"] is not None and v["failure_step"] is not None
+                lab["faulty"]
+                and v["faulty"]
+                and lab["failure_step"] is not None
+                and v["failure_step"] is not None
             ):
                 total += 1
                 hits += abs(lab["failure_step"] - v["failure_step"]) <= 1
@@ -228,8 +232,14 @@ def main() -> None:
     emit("TotalHours", f"{total_latency / 3600:.2f}")
 
     # Organic episodes: fault concentration by stratum (round-robin on instance index).
-    strata = ["happy", "restocking", "expired", "non_refundable", "wrong_customer",
-              "already_refunded"]
+    strata = [
+        "happy",
+        "restocking",
+        "expired",
+        "non_refundable",
+        "wrong_customer",
+        "already_refunded",
+    ]
     per_stratum: dict[str, int] = {s: 0 for s in strata}
     for t in agent:
         if t["label"]["faulty"]:
@@ -237,9 +247,398 @@ def main() -> None:
     emit("AgentAlreadyRefundedFaulty", str(per_stratum["already_refunded"]))
     emit("AgentWrongCustomerFaulty", str(per_stratum["wrong_customer"]))
 
-    OUT.write_text("\n".join(lines) + "\n")
-    print(f"wrote {OUT} ({len(lines) - 2} macros)")
+    paired_path = ROOT / "analysis" / "paired.json"
+    if paired_path.exists():
+        emit_paired(emit, json.loads(paired_path.read_text()))
+    emit_pair_example(emit, trajectories, by_judge)
+
+    if out == OUT and not (OUT.parent / "main.tex").exists():
+        # From the code repository the default path is not the paper's source directory;
+        # writing there would leave a stray numbers.tex that nothing reads.
+        raise SystemExit(f"{OUT.parent} holds no main.tex; pass --out analysis/numbers.tex")
+    out.write_text("\n".join(lines) + "\n")
+    print(f"wrote {out} ({len(lines) - 2} macros)")
+
+
+def emit_pair_example(emit, trajectories: list[dict], by_judge: dict[str, list[dict]]) -> None:
+    """Macros for the worked example in the first figure: one fault and its clean parent.
+
+    The pair is the first, by trajectory id, silent skipped_precondition fault whose clean
+    parent the outcome judge also flags. The asserts are the figure's claims: the outcome
+    judge returns one verdict for both runs, and the step judge flags only the fault, at the
+    labelled step and with the labelled type.
+    """
+    by_id = {t["trajectory_id"]: t for t in trajectories}
+    outcome = {v["trajectory_id"]: v for v in by_judge["outcome:qwen2.5:14b"]}
+    step = {v["trajectory_id"]: v for v in by_judge["step:qwen2.5:14b"]}
+    fault = next(
+        t
+        for t in sorted(trajectories, key=lambda t: t["trajectory_id"])
+        if t["label"]["failure_type"] == "skipped_precondition"
+        and t["label"]["outcome_correct"]
+        and f"{t['instance_id']}-clean" in by_id
+        and outcome[f"{t['instance_id']}-clean"]["faulty"]
+    )
+    parent = by_id[f"{fault['instance_id']}-clean"]
+    assert fault["goal"] == parent["goal"] and fault["final_answer"] == parent["final_answer"]
+    o_fault, o_parent = outcome[fault["trajectory_id"]], outcome[parent["trajectory_id"]]
+    for key in ("faulty", "confidence", "failure_type", "rationale"):
+        assert o_fault[key] == o_parent[key], key
+    s_fault, s_parent = step[fault["trajectory_id"]], step[parent["trajectory_id"]]
+    assert o_fault["faulty"] and s_fault["faulty"] and not s_parent["faulty"]
+    assert s_fault["failure_step"] == fault["label"]["failure_step"]
+    assert s_fault["failure_type"] == fault["label"]["failure_type"]
+    tools = [st["call"]["tool"] for st in parent["steps"]]
+    assert tools == [
+        "get_customer",
+        "lookup_order",
+        "get_policy",
+        "check_eligibility",
+        "issue_refund",
+        "reply",
+    ]
+    assert [st["call"]["tool"] for st in fault["steps"]] == tools[:3] + tools[4:]
+    refund = fault["steps"][fault["label"]["failure_step"]]["call"]
+    assert refund["tool"] == "issue_refund"
+    amount = f"{refund['args']['amount_eur']:.2f}"
+    assert f"EUR {amount} for order {refund['args']['order_id']}" in fault["final_answer"]
+    emit("PairExId", fault["instance_id"])
+    emit("PairExOrder", refund["args"]["order_id"])
+    emit("PairExAmount", amount)
+    emit("PairExOutcomeConf", f"{o_fault['confidence']:.2f}")
+    emit("PairExOutcomeType", o_fault["failure_type"].replace("_", "\\_"))
+    emit("PairExStep", str(s_fault["failure_step"]))
+
+
+def minus(text: str) -> str:
+    """Set the sign as math, so a negative number prints a minus and not a hyphen in text."""
+    return text.replace("-", "\\ensuremath{-}")
+
+
+def signed(x: float, places: int = 2) -> str:
+    return minus(f"{x:+.{places}f}")
+
+
+def signed_ci(lo: float, hi: float, places: int = 2) -> str:
+    return minus(f"[{lo:+.{places}f}, {hi:+.{places}f}]")
+
+
+def pvalue(p: float | None) -> str:
+    if p is None:
+        return "---"
+    return "<0.001" if p < 0.001 else f"{p:.3f}"
+
+
+def pct(x: float) -> str:
+    return f"{round(x * 100)}\\%"
+
+
+PAIR_CELL_KEY = {
+    "ReplySame": "reply_same",
+    "ReplyChanged": "reply_changed",
+    "Loud": "loud",
+    "Silent": "silent",
+    "All": "all",
+}
+#: Rows of tab:paired, printed like the per-type rows (two places).
+PAIR_ROW_KEY = {"ReplySameKept": "reply_same_kept", "ReplySameBroke": "reply_same_broke"}
+
+
+def emit_paired(emit, paired: dict) -> None:
+    """Macros for the paired analysis (analysis/paired.json); names follow the contract."""
+    pub = paired["published"]
+    d = pub["design"]
+    emit("NReplySame", str(d["n_reply_same"]))
+    emit("NReplySameKept", str(d["n_reply_same_kept"]))
+    emit("NReplySameBroke", str(d["n_reply_same_broke"]))
+    emit("NReplyChanged", str(d["n_faults"] - d["n_reply_same"]))
+    emit("NPairs", str(d["n_pairs"]))
+    emit("NPairsReplySame", str(d["n_pairs_reply_same"]))
+    emit("NPairsReplyChanged", str(d["n_pairs"] - d["n_pairs_reply_same"]))
+    emit("NPairsLoud", str(d["n_pairs_loud"]))
+    emit("NPairsSilent", str(d["n_pairs_silent"]))
+    emit("NLatePairs", str(d["n_late_pairs"]))
+    emit("NLateParents", str(d["n_late_parents"]))
+    emit("OutcomeIdenticalPairs", str(d["outcome_identical_pairs"]))
+
+    strata = pub["outcome_strata"]
+    escal = ["expired", "non_refundable", "wrong_customer"]
+    for name, keys in [
+        ("Happy", ["happy"]),
+        ("Restock", ["restocking"]),
+        ("Already", ["already_refunded"]),
+        ("Escal", escal),
+    ]:
+        emit(f"OutcomeFA{name}K", str(sum(strata[k]["clean_flagged"] for k in keys)))
+        emit(f"OutcomeFA{name}N", str(sum(strata[k]["clean_n"] for k in keys)))
+    for name, keys in [
+        ("Happy", ["happy"]),
+        ("Restock", ["restocking"]),
+        ("Already", ["already_refunded"]),
+        ("Escal", escal),
+    ]:
+        emit(f"OutcomeSame{name}K", str(sum(strata[k]["reply_same_flagged"] for k in keys)))
+        emit(f"OutcomeSame{name}N", str(sum(strata[k]["reply_same_n"] for k in keys)))
+    rates = [s["clean_flagged"] / s["clean_n"] for s in strata.values()]
+    emit("OutcomeFAStratumMaxPct", pct(max(rates)))
+    emit("OutcomeFAStratumMinPct", pct(min(rates)))
+    recall = pub["outcome_per_type_recall"]
+    same_types = [
+        "wrong_tool",
+        "hallucinated_argument",
+        "skipped_precondition",
+        "ignored_observation",
+    ]
+    emit("OutcomeReplySameRecallMinPct", pct(min(recall[t] for t in same_types)))
+    emit("OutcomeReplySameRecallMaxPct", pct(max(recall[t] for t in same_types)))
+    emit("OutcomeLoudFlags", str(pub["outcome_loud"]["flags"]))
+    emit("OutcomeLoudFlagsSame", str(pub["outcome_loud"]["flags_reply_same"]))
+
+    table = pub["paired"]
+    for jname, jid in JUDGE_KEY.items():
+        for tname, tid in TYPE_KEY.items():
+            cell = table[jid][tid]
+            emit(f"{jname}Pair{tname}", signed(cell["delta"]))
+            emit(f"{jname}Pair{tname}Disc", f"{cell['b10']}/{cell['b01']}")
+            emit(f"{jname}Pair{tname}P", pvalue(cell["mcnemar_p"]))
+            emit(
+                f"{jname}Pair{tname}CI",
+                "---" if cell["structural"] else signed_ci(cell["lo"], cell["hi"]),
+            )
+        for cname, cid in PAIR_CELL_KEY.items():
+            cell = table[jid][cid]
+            emit(f"{jname}Pair{cname}", signed(cell["delta"], 3))
+            emit(f"{jname}Pair{cname}Disc", f"{cell['b10']}/{cell['b01']}")
+            emit(
+                f"{jname}Pair{cname}CI",
+                "---" if cell["structural"] else signed_ci(cell["lo"], cell["hi"]),
+            )
+        for rname, rid in PAIR_ROW_KEY.items():
+            cell = table[jid][rid]
+            emit(f"{jname}Pair{rname}", signed(cell["delta"]))
+            emit(f"{jname}Pair{rname}Disc", f"{cell['b10']}/{cell['b01']}")
+            emit(f"{jname}{rname}", fmt(pub["cell_recall"][jid][rid], 2))
+        emit(f"{jname}FAK", str(pub["clean_flags"][jid]))
+    for tname, tid in TYPE_KEY.items():
+        emit(f"PairN{tname}", str(table["outcome:qwen2.5:14b"][tid]["n"]))
+    for rname, rid in PAIR_ROW_KEY.items():
+        emit(f"NPairs{rname}", str(table["outcome:qwen2.5:14b"][rid]["n"]))
+    gap = pub["contrasts"]["outcome_paired_loud_minus_silent"]
+    emit("OutcomePairGap", signed(gap["point"], 3))
+    emit("OutcomePairGapCI", signed_ci(*gap["ci"], places=3))
+    unsup = pub["contrasts"]["unsup_step_minus_outcome"]
+    emit("DeltaPairUnsupStepOutcome", signed(unsup["point"], 3))
+    emit("DeltaPairUnsupStepOutcomeCI", signed_ci(*unsup["ci"], places=3))
+
+    traj = pub["trajectory"]
+    loc = pub["localisation_counts"]
+    for jname, jid in JUDGE_KEY.items():
+        t = traj[jid]
+        for mname, key, places in [
+            ("Sens", "sens", 3),
+            ("Spec", "spec", 3),
+            ("BalAcc", "bal_acc", 3),
+            ("TypeJoint", "type_joint", 3),
+            ("BrierFaulty", "brier_faulty", 3),
+            ("BrierClean", "brier_clean", 3),
+            ("PPVFive", "ppv_0.05", 2),
+        ]:
+            emit(f"{jname}{mname}", fmt(t[key]["point"], places))
+            lo, hi = t[key]["ci"]
+            # Brier intervals are narrower than two decimals can show next to a 3-decimal point.
+            width = 3 if mname.startswith("Brier") else 2
+            emit(
+                f"{jname}{mname}CI",
+                "---" if hi - lo < 1e-9 else f"[{lo:.{width}f}, {hi:.{width}f}]",
+            )
+        if jid in loc:
+            c = loc[jid]
+            for mname, key in [
+                ("LocDet", "loc_det"),
+                ("LocJoint", "loc_joint"),
+                ("LocJointNonOmit", "loc_joint_nonomit"),
+            ]:
+                emit(f"{jname}{mname}", fmt(t[key]["point"]))
+                lo, hi = t[key]["ci"]
+                emit(f"{jname}{mname}CI", "---" if hi - lo < 1e-9 else f"[{lo:.2f}, {hi:.2f}]")
+            emit(f"{jname}LocInvalid", str(c["invalid"]))
+            emit(f"{jname}LocNonOmitK", str(c["nonomit_exact"]))
+            emit(f"{jname}LocNonOmitN", str(c["nonomit_detected"]))
+            emit(f"{jname}Detected", str(c["detected"]))
+    for jid, value in pub["ppv_floor_5pct"].items():
+        jname = next(k for k, v in JUDGE_KEY.items() if v == jid)
+        emit(f"{jname}PPVFiveLow", fmt(value, 2))
+    emit("StepQMistyped", str(pub["step_mistyped"]))
+    emit("StepQMistypedPct", pct(pub["step_mistyped"] / loc["step:qwen2.5:14b"]["detected"]))
+
+    cal = pub["calibration_deltas"]
+    for name, key in [
+        ("DeltaSelfconsBrier", "selfcons_minus_step_brier"),
+        ("DeltaOutcomeStepBrier", "outcome_minus_step_brier"),
+        ("DeltaOutcomeStepECE", "outcome_minus_step_ece"),
+    ]:
+        emit(name, signed(cal[key]["point"], 3))
+        emit(f"{name}CI", signed_ci(*cal[key]["ci"], places=3))
+
+    sc = pub["selfcons"]
+    emit("SelfconsUnsupMissed", str(sc["unsup_missed"]))
+    emit("SelfconsUnsupMissUnanimous", str(sc["unsup_missed_unanimous"]))
+    emit("SelfconsUnsupMissOneVote", str(sc["unsup_missed_one_vote"]))
+    emit("SelfconsAnyUnsup", fmt(sc["any_unsup"], 2))
+    emit("SelfconsAnyUnsupCI", f"[{sc['any_unsup_ci'][0]:.2f}, {sc['any_unsup_ci'][1]:.2f}]")
+    emit("SelfconsAnyFA", fmt(sc["any_fa"], 2))
+    emit("SelfconsAnyPPVFive", fmt(sc["any_ppv_5pct"], 2))
+    emit("SelfconsMajorityPPVFive", fmt(sc["majority_ppv_5pct"], 2))
+
+    r = pub["step_unsup_rationales"]
+    emit("StepQUnsupMissMentionReply", str(r["missed_mention_reply"]))
+    emit("StepQUnsupMissNamesClaim", str(r["missed_names_claim"]))
+    emit("StepQUnsupMissCapped", str(r["missed_capped"]))
+    tmpl = r["by_template"]
+    emit("StepQUnsupVoucherK", str(tmpl["voucher"]["caught"]))
+    emit("StepQUnsupVoucherN", str(tmpl["voucher"]["n"]))
+    others = [v for k, v in tmpl.items() if k != "voucher"]
+    emit("StepQUnsupOtherK", str(sum(v["caught"] for v in others)))
+    emit("StepQUnsupOtherN", str(sum(v["n"] for v in others)))
+    caught = sum(v["caught"] for v in tmpl.values())
+    emit("StepQUnsupCaughtPct", pct(caught / sum(v["n"] for v in tmpl.values())))
+
+    seq = pub["sequence_rule"]
+    emit("SeqWrongToolK", str(seq["caught"]["wrong_tool"]))
+    emit("SeqWrongToolN", str(seq["hosts"]["wrong_tool"]))
+    emit("SeqFA", str(seq["clean_flags"]))
+    emit("SeqOrganicCleanK", str(seq["organic_clean_flags"]))
+    emit("SeqOrganicCleanN", str(seq["organic_clean_n"]))
+    emit("SeqLenientOrganicCleanK", str(seq["organic_clean_flags_lenient"]))
+    emit("SeqOrganicRepeatEscK", str(seq["organic_flagged_repeat_escalate"]))
+    emit("SeqOrganicNoEligK", str(seq["organic_flagged_no_eligibility"]))
+    emit("SeqOrganicTwoCustK", str(seq["organic_flagged_second_customer"]))
+
+    emit("StepLStepHitsK", str(pub["llama"]["exact_of_detected"]))
+    emit("StepLStepHitsN", str(pub["llama"]["detected"]))
+    emit("StepLDistinctRationales", str(pub["llama"]["distinct_rationales"]))
+
+    agent = pub["agent"]
+    emit("AgentRefundRepliesExactK", str(agent["refund_replies_state_amount"]))
+    emit("AgentRefundRepliesExactN", str(agent["refund_replies"]))
+    emit("AgentRepliesOracleIdentical", str(agent["replies_identical_to_oracle"]))
+    emit("AgentNPerStratum", str(agent["n"] // 6))
+    emit("FAUpperBoundPct", "3.6\\%")  # Clopper-Pearson 95% upper bound on 0/100, in percent
+
+    if "ablation" in paired:
+        emit_ablation(emit, paired["ablation"], pub["outcome_per_type_recall"])
+
+
+ABL_NAME = {"A": "AblA", "B": "AblB", "C": "AblC", "D": "AblD", "Ao": "AblAo"}
+
+
+def emit_ablation(emit, abl: dict, august_recall: dict[str, float]) -> None:
+    """Macros for the October view-by-task cells (see results/ablation/PREDICTIONS.md)."""
+    for short, jid in abl["cells"].items():
+        name = ABL_NAME[short]
+        fa = abl["false_alarms"][short]
+        emit(f"{name}FA", fmt(fa["point"]))
+        emit(f"{name}FAK", str(fa["k"]))
+        emit(f"{name}FAN", str(fa["n"]))
+        lo, hi = fa["ci"]
+        emit(f"{name}FACI", "---" if hi - lo < 1e-9 else f"[{lo:.2f}, {hi:.2f}]")
+        cells = abl["paired"][jid]
+        same = cells["reply_same"]
+        emit(f"{name}SameFlipK", str(same["b10"] + same["b01"]))
+        for cname, cid in [
+            ("SameKept", "reply_same_kept"),
+            ("SameBroke", "reply_same_broke"),
+            ("ReplySame", "reply_same"),
+            ("ReplyChanged", "reply_changed"),
+            ("Unsup", "unsupported_claim"),
+            ("Prem", "premature_stop"),
+            ("All", "all"),
+        ]:
+            cell = cells[cid]
+            emit(f"{name}Pair{cname}", signed(cell["delta"]))
+            emit(f"{name}Pair{cname}Disc", f"{cell['b10']}/{cell['b01']}")
+            emit(
+                f"{name}Pair{cname}CI",
+                "---" if cell["structural"] else signed_ci(cell["lo"], cell["hi"]),
+            )
+    words = {"C1": "One", "C2": "Two", "C3": "Three", "C4": "Four", "C5": "Five"}
+    for key, c in abl["contrasts"].items():
+        name = f"AblC{words[key[:2]]}"
+        emit(name, signed(c["point"], 3))
+        emit(f"{name}CI", signed_ci(*c["ci"], places=3))
+        emit(f"{name}P", pvalue(c["p"]))
+        emit(f"{name}PHolm", pvalue(c["p_holm"]))
+    repro = abl["reproducibility"]
+    for short in ("D", "A", "Ao"):
+        if short not in repro:
+            continue
+        name = ABL_NAME[short]
+        emit(f"{name}AgreeN", str(repro[short]["n"]))
+        for field, mname in [
+            ("faulty", "Faulty"),
+            ("failure_type", "Type"),
+            ("failure_step", "Step"),
+            ("confidence", "Conf"),
+            ("rationale", "Rationale"),
+        ]:
+            emit(f"{name}Agree{mname}K", str(repro[short][field]))
+        emit(f"{name}FlipK", str(repro[short]["n"] - repro[short]["faulty"]))
+        emit(f"{name}FlipReplyChangedK", str(repro[short]["flips_reply_changed"]))
+    if "schema_swap_identical" in repro:
+        emit("AblSchemaIdenticalK", str(repro["schema_swap_identical"]["k"]))
+        emit("AblSchemaIdenticalN", str(repro["schema_swap_identical"]["n"]))
+    steps = abl.get("premature_raw_steps", {})
+    if steps:
+        emit("AblDPremStepFourK", str(steps.get("4", 0)))
+        emit("AblDPremStepThreeK", str(steps.get("3", 0)))
+        emit("AblDPremDetectedN", str(sum(steps.values())))
+        emit("AblDPremStepOtherK", str(sum(steps.values()) - steps.get("3", 0) - steps.get("4", 0)))
+    by_type = abl.get("flags_by_type", {})
+    if "A" in by_type:
+        # The outcome judge's prompt on the October engine: recall on the four reply-unchanged
+        # types, its largest move from the August value in points, and its flags on the clean
+        # runs both sessions judged.
+        same_types = (
+            "wrong_tool",
+            "hallucinated_argument",
+            "skipped_precondition",
+            "ignored_observation",
+        )
+        october = {t: by_type["A"][t]["k"] / by_type["A"][t]["n"] for t in same_types}
+        emit("AblARecallSameMinPct", pct(min(october.values())))
+        emit("AblARecallSameMaxPct", pct(max(october.values())))
+        emit(
+            "AblARecallMoveMaxPts",
+            str(max(round(abs(august_recall[t] - october[t]) * 100) for t in same_types)),
+        )
+        emit("AblAFAOrigK", str(abl["original_clean_flags"]["A"]["k"]))
+        emit("AblAFAOrigN", str(abl["original_clean_flags"]["A"]["n"]))
+    if "C" in by_type:
+        # The answer-only task with every step in view, by fault type (a post hoc split).
+        c = by_type["C"]
+        refund = [c["skipped_precondition"], c["ignored_observation"]]
+        emit("AblCRefundStepK", str(sum(r["k"] for r in refund)))
+        emit("AblCRefundStepN", str(sum(r["n"] for r in refund)))
+        emit("AblCSkippedSilentK", str(abl["skipped_silent_flags"]["C"]["k"]))
+        emit("AblCSkippedSilentN", str(abl["skipped_silent_flags"]["C"]["n"]))
+        emit("AblCHallucK", str(c["hallucinated_argument"]["k"]))
+        emit("AblCWrongToolK", str(c["wrong_tool"]["k"]))
+    detail = abl.get("organic", {}).get("D_detail")
+    if detail:
+        emit("OrgDMissK", str(detail["missed"]))
+        emit("OrgDMissStopAfterLookupK", str(detail["missed_stop_after_lookup"]))
+        emit("OrgDCleanRepeatCallK", str(detail["clean_flagged_repeat_call"]))
+    for short, rows in abl.get("organic", {}).items():
+        if short == "D_detail":
+            continue
+        name = f"Org{short}"
+        emit(f"{name}FlagsFaultyK", str(rows["faulty_flagged"]))
+        emit(f"{name}FlagsFaultyN", str(rows["faulty_n"]))
+        emit(f"{name}FlagsCleanK", str(rows["clean_flagged"]))
+        emit(f"{name}FlagsCleanN", str(rows["clean_n"]))
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Emit the paper's numbers as LaTeX macros.")
+    parser.add_argument("--out", type=Path, default=OUT, help="where to write numbers.tex")
+    main(parser.parse_args().out)

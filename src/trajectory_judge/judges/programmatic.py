@@ -1,9 +1,9 @@
 """The rule engine as a judge: free, instant, and blind in two places.
 
-Its confidence is asymmetric on purpose. When a rule fires, the verdict is close to certain —
-the violation is structural. When no rule fires, "clean" is a weak claim, because two of the
-six failure types are outside what rules can express at all. Reporting that asymmetry honestly
-is what makes its calibration number meaningful rather than decorative.
+Its confidence is asymmetric on purpose. When a rule fires, the verdict is close to certain,
+because the violation is structural. When no rule fires, "clean" is a weak claim, because two of
+the six failure types fall outside what these eight rules express. Reporting that asymmetry is
+what makes its calibration number mean something.
 """
 
 from __future__ import annotations

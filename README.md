@@ -12,22 +12,28 @@
 
 </div>
 
-Outcome-only evaluation is the production default for agents: show a judge the request and the
-reply, ask whether it was handled well. It cannot see a trajectory that skipped a required
-check, acted against what a tool returned, or promised something no observation supports — as
-long as the final answer came out right. Those are the failures that survive into production,
-because the metric meant to catch them is structurally blind to them.
+Paper: *trajectory-judge: What Outcome-Only LLM Judges Miss on Agent Trajectories*, NeurIPS 2026
+workshop "Who Verifies the Agents? Toward Reliable Agent Development"
+([arXiv:2609.00038](https://arxiv.org/abs/2609.00038)). To rebuild its numbers, see
+[Reproducing the paper](#reproducing-the-paper).
 
-This repository measures that blind spot where the ground truth is known by construction: a
+Outcome-only evaluation is the production default for agents: show a judge the request and the
+reply, and ask whether it was handled well. As long as the final answer came out right, that
+judge cannot see a trajectory that skipped a required check, acted against what a tool returned,
+or promised something no observation supports. Those failures survive into production because
+the metric meant to catch them never looks at the steps.
+
+This repository measures that blind spot where the ground truth is known in advance: a
 deterministic tool-using environment, a scripted policy that always solves it correctly, and a
-fault injector that breaks exactly one thing at a known step and records whether the
-customer-visible outcome survived. Five judges are then asked the same questions about each
-trajectory — is it faulty, of which kind, at which step if they can see steps at all, and how
-sure are you — and scored on detection, localisation, typing, calibration and cost.
+fault injector that breaks a single thing at a known step and records whether the
+environment outcome (the refund or escalation) survived and whether the reply changed. Every
+fault keeps a link to the clean run it was made from. Five judges then answer the same questions about each
+trajectory (is it faulty, of which kind, at which step if they can see steps at all, and how
+sure are they) and are scored on detection, localisation, typing, calibration and cost.
 
 ```mermaid
 flowchart LR
-    A["support-desk instances<br/>6 strata, seeded"] --> B["oracle policy<br/>always correct"]
+    A["support-desk instances<br/>6 scenarios, seeded"] --> B["oracle policy<br/>always correct"]
     B --> C["fault injection<br/>6 types, known step"]
     B --> D["clean trajectories"]
     C --> E{"outcome<br/>survived?"}
@@ -41,20 +47,22 @@ flowchart LR
 
 ## What it demonstrates
 
-- **Ground truth without annotation.** A scripted oracle plus injected faults gives every
-  trajectory a label — faulty or not, which step, which type, and whether the outcome survived —
-  at no annotation cost. Fault injection for failure attribution is established practice
-  (see [References](#references)); what is done with it here is the controlled comparison.
-- **The stratification that matters.** Faults are split by whether the customer-visible outcome
-  stayed correct. Reporting one recall number over both strata hides exactly the effect worth
-  measuring.
-- **An honest free baseline.** A rule engine encodes the process the agent was supposed to
-  follow. Its coverage is uneven *by construction* and the gaps are pinned by tests — which is
-  the argument for LLM judges, stated as a measurement instead of an assertion.
+- **Ground truth without annotation.** A scripted oracle plus injected faults labels every
+  trajectory (faulty or not, which step, which type, and whether the outcome survived) at no
+  annotation cost. Fault injection for failure attribution is established practice (see
+  [References](#references)). The new part here is the controlled comparison.
+- **Pairing, then stratifying.** Every fault is compared with the clean run it was made from,
+  and faults are split by whether the environment outcome stayed correct and whether the reply
+  changed. Recall alone, pooled or split, can credit a judge with detection it does not have:
+  a judge that flags a fault and its clean parent alike has not detected anything.
+- **A free baseline.** A rule engine encodes the process the agent was supposed to follow. Its
+  coverage has known gaps, pinned by tests, and those gaps are the measured case for using LLM
+  judges at all.
 - **Evaluation as engineering.** Constrained JSON decoding, explicit context sizing, seeded and
   reproducible runs, resumable long jobs, cost and latency reported next to accuracy, and a CI
-  check that the committed tables are exactly what the committed raw verdicts produce.
-- **Calibration, not just accuracy.** Every judge must state a confidence, and every judge is
+  check that the committed tables and analysis files match what the committed raw verdicts
+  produce.
+- **Calibration as well as accuracy.** Every judge must state a confidence, and every judge is
   scored on whether that confidence meant anything.
 
 ## Quickstart
@@ -77,7 +85,7 @@ make test          # full suite: no model, no network, a fraction of a second
 make demo          # end-to-end on the deterministic mock judge, under a minute
 ```
 
-The real run needs [Ollama](https://ollama.com) and nothing else — no API keys anywhere:
+The real run needs only [Ollama](https://ollama.com). There are no API keys anywhere:
 
 ```bash
 ollama pull qwen2.5:14b
@@ -86,9 +94,37 @@ make report                          # rebuilds every table and figure, offline
 ```
 
 `make run` is resumable: verdicts are appended keyed by `(trajectory, judge)`, and a rerun skips
-what is already on disk. `make report` never calls a model — it rebuilds the tables and figures
+what is already on disk. `make report` never calls a model. It rebuilds the tables and figures
 from the raw verdicts committed in this repository, so every number below can be reproduced
 without running anything.
+
+## Reproducing the paper
+
+Everything here runs offline from committed verdicts, in well under a minute:
+
+```bash
+pip install -e ".[dev]"
+make report     # results/tables: the per-judge and per-type tables below
+make numbers    # analysis/: intervals, paired estimates, and the paper's macro file
+git diff --exit-code -- results/tables analysis    # nothing should change
+```
+
+| File | What it holds |
+|---|---|
+| `analysis/ci.json` | bootstrap intervals and differences between judges (`analysis/bootstrap_ci.py`) |
+| `analysis/paired.json` | paired discrimination against clean parents, the view-by-task ablation, the agent episodes (`analysis/paired_ci.py`) |
+| `analysis/numbers.tex` | every number the paper prints, as a LaTeX macro (`analysis/make_numbers.py`) |
+| `data/` | the files the analysis reads: flat-named copies of `results/`, described in [data/PROVENANCE.md](data/PROVENANCE.md) |
+| `results/ablation/` | the view-by-task runs: `PREDICTIONS.md` (written before the runs), `queue.sh` (what ran), `engine.txt` (engine version and model digest around every step), raw verdicts and raw model responses |
+
+`python analysis/make_figures.py` redraws the paper's figures and needs matplotlib. CI runs
+`make report` and `make numbers` on every push and fails if a committed file changes.
+
+The committed model verdicts came from two Ollama versions: 0.30.11 for the main comparison
+(August 2026) and 0.33.3 for the ablation (October 2026). The outcome-only judge's verdicts
+moved between the two, so a rerun on another engine may not reproduce them. `queue.sh` skips
+verdicts already on disk; move `results/ablation/raw` and `results/ablation/organic` aside to
+run it fresh.
 
 ## Serving
 
@@ -119,7 +155,7 @@ curl -s localhost:8000/v1/judge -H 'content-type: application/json' -d '{
 
 | method | path | what it does |
 |---|---|---|
-| GET | `/healthz` | liveness; reports the build's commit, since the version is pinned |
+| GET | `/healthz` | liveness; reports the build's commit, since the version moves only at a release |
 | GET | `/readyz` | readiness; 503 when the model backend is unreachable |
 | GET | `/v1/judges` | the catalogue: what each judge needs and how many model calls it costs |
 | GET | `/v1/models` | what the backend reports; 200 even when it is down |
@@ -193,28 +229,33 @@ fees, expired windows, non-refundable items, orders belonging to someone else, a
 already refunded.
 
 **The environment is permissive and the checker is strict.** `issue_refund` will refund an order
-whose eligibility was never checked, exactly as a real payments API would. Nothing in the world
-stops an agent from skipping the process — only the rules say it was wrong. Without that split
-there would be no silent failures to measure, which is why it is a test
+whose eligibility was never checked, as a real payments API would. Nothing in the environment
+stops an agent from skipping the process, and only the rules say it was wrong. Without that
+split there would be no silent failures to measure, so the split itself is pinned by a test
 (`test_environment_is_permissive_by_design`).
 
 ## The six failure types, and what a rule engine can see
 
-Each mutation edits the oracle's call list at a known step and replays it, so a faulty
-trajectory is as internally consistent as a real run. Coverage of the rule engine below is
-measured, not estimated, and pinned by `test_checker_coverage_is_what_the_readme_claims`.
+Each mutation edits the oracle's call list at a known step and replays it, so every observation
+in a faulty trajectory comes from the environment. Four of the six types leave the final reply
+byte-identical to the clean run's. That has one side effect a real run would not have: in the
+75 loud faults among them, the kept reply states the authorised amount although the order total
+was refunded. Coverage of the rule engine below is measured, not estimated, and pinned by
+`test_checker_coverage_is_what_the_readme_claims`.
 
-| Failure type | What it is | Rules catch it | Outcome survives |
-|---|---|---:|---|
-| `skipped_precondition` | refunds without confirming eligibility | 100% | at full price, yes |
-| `hallucinated_argument` | looks up a policy for an SKU nobody mentioned | 100% | yes |
-| `ignored_observation` | refunds an amount other than the one authorised | 100% | no |
-| `premature_stop` | stops before acting or replying | 100% | no |
-| `wrong_tool` | re-fetches the order instead of reading the policy | **0%** | yes |
-| `unsupported_claim` | promises a replacement nobody dispatched | **0%** | yes |
+| Failure type | What it is | Rules catch it | Outcome survives | Reply changes |
+|---|---|---:|---|---|
+| `skipped_precondition` | refunds without confirming eligibility | 100% | at full price, yes | no |
+| `hallucinated_argument` | looks up a policy for an SKU nobody mentioned | 100% | yes | no |
+| `ignored_observation` | refunds an amount other than the one authorised | 100% | no | no |
+| `premature_stop` | stops before acting or replying | 100% | no | yes |
+| `wrong_tool` | re-fetches the order instead of reading the policy | **0%** | yes | no |
+| `unsupported_claim` | promises a replacement nobody dispatched | **0%** | yes | yes |
 
-The two zeroes are the point. A plausible-but-wrong tool choice breaks no rule, and an invented
-sentence in the reply is not a rule violation at all — both need something that reads.
+The two zeroes are limits of the eight implemented rules: none encodes the required tool order,
+and none reads the reply. A sequence rule written after the fact catches every `wrong_tool`
+fault, but it also flags 27 of the 47 agent episodes the checker passes, so it is not in the
+baseline.
 
 ## Results
 
@@ -240,7 +281,7 @@ Strata each judge actually saw:
 | `step:llama3.1:8b` | 100 | 175 | 125 |
 | `selfcons3:qwen2.5:14b` | 100 | 175 | 125 |
 
-A *silent* fault left the customer-visible outcome correct; a *loud* one did not.
+A *silent* fault left the environment outcome (the refund or escalation) correct; a *loud* one did not. Reply text is not part of the outcome.
 
 `n/a` under step localisation means the judge has no step field to fill: the outcome-only judge never sees the steps, so it is not asked to name one.
 
@@ -266,69 +307,96 @@ worth nothing.
 ![Stated confidence against observed accuracy for each judge](https://raw.githubusercontent.com/mohammadi-hadi/trajectory-judge/main/results/figures/calibration.png)
 
 Points below the diagonal are overconfidence. The outcome-only judge sits well below it across
-its whole range — it is most certain in exactly the region where it is least right.
+its whole range, and it is most confident where it is least accurate.
 
 ### What this says
 
-**The blind spot is real and it is about half the faults.** `outcome:qwen2.5:14b` catches 84% of
-faults that broke the answer and 45% of faults that did not. The judge is not weak — it is
-looking at evidence that does not contain the failure. It also flags a third of correct
-trajectories, so it is noisy *and* blind, which is the worst pair to have in a metric people
-trust enough to gate releases on.
+**Recall is not detection.** `outcome:qwen2.5:14b` scores 34% to 76% recall on the four fault
+types that leave the reply unchanged. On those faults its prompt is the one it gets for the clean
+run the fault was made from, and it returns the same verdict, confidence and rationale on all
+151 judged pairs. Its recall there is its flag rate on clean runs, which runs from 0% to 76%
+depending on the scenario. Rerun on a newer Ollama, the same prompt scores 20% to 26% on those
+types, again without telling a single fault from its parent.
 
-**Showing the judge the trajectory costs three times as much and pays for itself.**
-`step:qwen2.5:14b` reaches
-0.766 silent recall, 0.973 exact step localisation, and **zero false alarms across 100 clean
-trajectories** — of the 257 trajectories it flagged, every one was genuinely faulty. Its stated
-confidence is also nearly honest (ECE 0.033 against the outcome judge's 0.253).
+Paired discrimination is the share of faults a judge flags minus the share of their clean
+parents it flags, over the 251 faults whose parent was judged (`analysis/paired.json`):
 
-**Nobody reads the final answer.** `unsupported_claim` — the agent follows the procedure
-perfectly and then invents a promise in the reply — is caught by the rule engine 0% of the time
-and by the step-rubric judge 18%. The outcome-only judge's 0.50 looks better until you read it
-against its 0.33 false-alarm rate: it is barely above the rate at which it flags correct work.
-A missed example is diagnostic — the step judge walks the procedure, concludes *"the agent's
-trajectory follows the procedure correctly, step by step: 1. verified customer identity…"*, and
-never checks the sentence it was asked to check, at confidence 0.92. Giving a judge the whole
-trajectory makes it better at everything except the failure that lives in the answer, where it
-gets worse, because its attention goes to the steps.
+| Judge | all pairs (251) | reply unchanged, silent (117) | reply unchanged, loud (34) | `unsupported_claim` (50) | `premature_stop` (50) |
+|---|---:|---:|---:|---:|---:|
+| `programmatic` | +0.60 | +0.57 | +1.00 | +0.00 | +1.00 |
+| `outcome:qwen2.5:14b` | +0.16 | +0.00 | +0.00 | +0.16 | +0.66 |
+| `step:qwen2.5:14b` | +0.83 | +1.00 | +1.00 | +0.18 | +0.96 |
+| `step:llama3.1:8b` | −0.01 | −0.03 | +0.00 | +0.00 | +0.00 |
+| `selfcons3:qwen2.5:14b` | +0.81 | +1.00 | +1.00 | +0.16 | +0.90 |
 
-**Read every recall against its false-alarm rate.** `wrong_tool` at 0.34 for the outcome judge
-is not detection at all — that judge flags 0.33 of clean trajectories. Same number, no signal.
+**Splitting recall by outcome is not enough.** The outcome judge flags 84% of loud faults and
+45% of silent ones, but 55 of its 105 flags on loud faults are on faults it cannot tell from
+their parents. Paired, 0.84 becomes +0.39 and 0.45 becomes +0.05, and all of what is left comes
+from the two types that change the reply. It also flags a third of clean trajectories.
 
-**`step:llama3.1:8b` is the always-say-faulty baseline wearing a judge's clothes.** It flags
-397 of 400 trajectories, so its recall is 1.00 nearly everywhere and its F1 of 0.852 is just the
-base rate of faults in the set (precision 0.748 ≈ 300/400). Its rationales average 56 output
-tokens against the 14B model's 391 — it emits a placeholder sentence and jumps to the verdict.
-Same prompt, same schema, same grammar: this is a capability floor, not a prompting artefact.
-It is in the table because a cheap local judge that looks excellent on recall alone is a
-mistake worth being able to point at.
+**Checking each step pays for itself, on a small clean set.** `step:qwen2.5:14b` separates every
+reply-unchanged fault from its parent and raises no false alarm in 100 clean runs, which still
+allows a true rate up to 3.6%. It names the right step for all 209 detections on the five types
+whose fault is an executed step. On `premature_stop`, whose fault is an action never taken, 34
+verdicts name a step outside the trajectory. The table's 0.973 leaves those out; counted as
+misses, localisation is 0.844 of detected faults and 0.723 of all faults. Its ECE is 0.033
+against the outcome judge's 0.253, at this set's share of faults.
 
-**The rule engine is the best value in the table and still not enough.** Free, instant, perfect
-localisation, zero false alarms, and it types faults better than the LLM judge does
-(macro-F1 0.667 vs 0.606) because it never guesses. It also misses 57% of silent faults, and
-there is no version of it that does better — two of the six types are outside what rules can
+**The reply is discussed but rarely checked.** In `unsupported_claim` the agent follows the
+procedure and then invents a promise in the reply. Paired discrimination is +0.18 for the step
+judge and +0.16 for the outcome judge. The step judge catches one wording, the voucher apology,
+8 times out of 8, and the other three sentences once in 42. One miss shows the pattern: it walks
+the procedure, concludes *"the agent's trajectory follows the procedure correctly, step by step:
+1. verified customer identity…"*, and reports clean at confidence 0.92 on a reply that promises
+a cancelled subscription no observation mentions.
+
+**`step:llama3.1:8b` flags everything.** It flags 397 of 400 trajectories, so its recall is near
+1.00, its paired discrimination is zero or negative on every type, and its F1 of 0.852 is what
+flagging everything earns at this share of faults. Its step and type outputs still track the
+edit: on 222 of its 297 detections it names the injected step. One model and one prompt cannot
+separate the model's capacity from the prompt.
+
+**The rule engine is free and still not enough.** Instant, no false alarm on oracle runs, and it
+types faults better than the LLM judge (macro-F1 0.667 against 0.606) because it never guesses.
+It misses 57% of silent faults because two of the six types fall outside what its eight rules
 express.
 
-**Self-consistency cost 3× and bought nothing.** `selfcons3` is the same step-rubric judge
-sampled three times at temperature 0.7 with a majority vote. It is marginally *worse* than one
-greedy pass on detection (0.913 vs 0.923), silent recall (0.760 vs 0.766), type attribution
-(0.583 vs 0.606) and calibration (ECE 0.084 vs 0.033), better only on step localisation
-(0.982 vs 0.973), and it takes 30.2 s per trajectory against 10.4. The calibration result is the
-instructive one: vote share was supposed to be a real estimate where a single judge's stated
-confidence is not, but with k=3 it can only express two values and neither sits near the
-observed accuracy. Voting sharpened nothing here because the errors are not sampling noise —
-`unsupported_claim` goes 0.18 → 0.16, so all three samples miss the same invented promises.
-That is worth knowing before anyone pays 3× for an ensemble on this kind of task.
+**Majority voting cost 3× with no measurable gain.** `selfcons3` is the step judge sampled three
+times at temperature 0.7 with a majority vote. Against one greedy pass, silent recall (0.760
+against 0.766) and type F1 (0.583 against 0.606) do not move measurably, and it takes 30.2 s per
+trajectory against 10.4. Its ECE is higher (0.084 against 0.033) because a vote share at k=3
+takes only two values; the Brier score does not separate the two. On `unsupported_claim`, 32 of
+its 42 misses had no sample flag the trajectory and 10 had one. This is one 14B model at k=3.
 
-**Detecting a fault and naming it are different problems.** The step judge's confusion matrix
-(`results/tables/confusion.md`) shows near-perfect detection with attribution that slips a third
-of the time. It finds all 50 `hallucinated_argument` cases and calls 35 of them `wrong_tool` —
-fetching a policy for an invented SKU does look like a bad tool choice, and part of that is the
-taxonomy's boundary rather than the judge's mistake. `premature_stop` scatters worse: of 50, it
-names 14 correctly, calls 17 `unsupported_claim` and 11 `skipped_precondition`, which is a
-reasonable reading of a trajectory that stopped early and then said something it had not
-established. If a verdict is going to route a ticket or fill a dashboard category, this gap
-matters more than the detection number above it.
+**Detecting a fault and naming it are different problems.** The step judge detects 257 of 300
+faults and names the wrong type for 74 of them (29%); see `results/tables/confusion.md`. It
+finds all 50 `hallucinated_argument` cases and calls 35 of them `wrong_tool`. Fetching a policy
+for an invented SKU does look like a bad tool choice, so part of that error sits in the
+taxonomy's boundary. `premature_stop` scatters more: of 50, it names 14 correctly, calls 17
+`unsupported_claim` and 11 `skipped_precondition`. If a verdict is going to route a ticket or
+fill a dashboard category, measure this separately from detection.
+
+### View or instruction?
+
+The outcome and step judges differ in what they are shown, in what they are asked, and in output
+schema. `results/ablation` crosses the first two under one schema, in one session, with the
+predictions and decision rules pushed before the runs started
+([PREDICTIONS.md](results/ablation/PREDICTIONS.md)). Every fault is paired here (300 pairs, 141
+clean runs):
+
+| Cell | Shown | Asked | False alarms | Δ reply unchanged (200) | Δ `unsupported_claim` (50) | Δ `premature_stop` (50) |
+|---|---|---|---:|---:|---:|---:|
+| A′ | request and reply | judge the reply | 32 | +0.00 | +0.14 | +0.78 |
+| B | request and reply | check each step | 22 | −0.01 | +0.18 | +0.80 |
+| C | every step | judge the reply | 0 | +0.69 | +0.26 | +0.94 |
+| D′ | every step | check each step | 0 | +1.00 | +0.18 | +0.88 |
+
+Seeing the steps is necessary for every reply-unchanged fault. Given the steps, the instruction
+matters on the two types that leave the refund untouched: asked only about the reply, C still
+flags every refund made without the check or for the wrong amount, 32 of 50
+`hallucinated_argument` and 6 of 50 `wrong_tool`. Neither instruction resolves
+`unsupported_claim`. B's −0.01 is one pair in 200 whose verdict differed between two servings of
+the same prompt.
 
 ### What a model actually does here
 
@@ -340,7 +408,7 @@ Episodes played: **60**
 | Observation | Count | Share |
 |---|---:|---:|
 | flagged by the rule checker or wrong outcome | 13 | 0.22 |
-| wrong customer-visible outcome | 10 | 0.17 |
+| wrong environment outcome | 10 | 0.17 |
 | faulty but outcome still correct | 3 | 0.05 |
 
 | Rule-visible failure type | Count |
@@ -349,35 +417,42 @@ Episodes played: **60**
 
 Labels here come from the rule checker, which is blind to `wrong_tool` and `unsupported_claim`, so the true fault rate is at least this high.
 
-Worth stating plainly: the organic failures are almost all `premature_stop`, while the injected
-distribution spans all six types evenly. The benchmark therefore measures *what a judge is
-capable of catching*, not how often each fault occurs in the wild. Those are different
-questions and only the first one is answered here.
+The failures the checker sees here are all `premature_stop`, while the injected distribution
+spans all six types evenly, and no agent reply is byte-identical to the oracle's. The benchmark
+therefore measures *what a judge is capable of catching*. How often each fault occurs in the
+wild is a separate question, and this repository does not answer it.
+
+The ablation's two published-prompt cells were also run on these episodes, as a description
+only, since the same model drove the agent and judges it. Of the 13 episodes the checker flags,
+A′ flags 11 and D′ 6; of the 47 it passes, A′ flags 18 and D′ 4. The 7 flagged episodes D′
+passes all stop after looking up the order and reply with something that reads as a resolution,
+a kind of early stop the injector never produces.
 
 ## Design notes
 
 - **Why an oracle instead of collecting agent runs?** Labelling real runs needs a labeller, and
   the labeller is the thing under test. A scripted policy gives trajectories that are correct by
-  construction, so a flag on a clean one is a false positive with nothing to argue about.
-- **Why stratify by outcome rather than report one recall?** Because a single number averages
-  the blind spot away. The gap between 0.84 and 0.45 for the outcome judge is the entire result;
-  pooled, it would read as a respectable 0.61.
+  construction, so a flag on a clean one is a false positive.
+- **Why pair every fault with its clean parent?** Because recall mixes detection with how often
+  a judge flags that kind of run anyway. The outcome judge's 0.84 on loud faults and 0.45 on
+  silent ones look like a blind spot with a clear edge; paired, they are +0.39 and +0.05, and
+  what is left comes from the two fault types that change the reply.
 - **Why does the judge get the procedure in its prompt?** A judge that has not been told the
   rules is guessing at policy. Both judges get the same standard operating procedure, word for
-  word, so the only difference between them is how much of the trajectory they see. One
-  consequence worth naming: the agent in *What a model actually does here* was given that same
-  text, so it and its judge were working from identical wording.
+  word. They still differ in task instruction and output schema as well as in view, which is
+  what the ablation above takes apart. The agent in
+  *What a model actually does here* was given that same text too, so it and its judge were
+  working from identical wording.
 - **Why `reasoning` first in every response schema?** Property order in a JSON schema is
   generation order under constrained decoding, so putting the reasoning field first is
   chain-of-thought enforced by the grammar rather than requested politely.
 - **Why set `num_ctx` explicitly?** Ollama's default context silently truncates a rendered
   trajectory. A judge scoring the half it happened to see is a bug that reads as a finding.
-- **Why is type scoring restricted to genuinely faulty trajectories?** A judge that flags a
-  clean trajectory and names a type is already charged by detection precision. Counting it again
-  in the confusion matrix would bill the same mistake twice.
+- **Why is type scoring restricted to faulty trajectories?** A judge that flags a clean
+  trajectory and names a type is already charged by detection precision. Counting it again in
+  the confusion matrix would bill the same mistake twice.
 - **Why commit the raw verdicts?** So the tables are checkable. CI regenerates them from the
-  committed JSONL and fails on any drift, which means the numbers above cannot quietly stop
-  matching the data they came from.
+  committed JSONL and fails on any drift.
 
 ## Limitations
 
@@ -386,11 +461,16 @@ questions and only the first one is answered here.
 - **Injected faults are cleaner than real ones.** Each mutation breaks exactly one thing at one
   step. Real trajectories fail in cascades, and the organic episodes above show the fault mix in
   the wild is nothing like uniform.
-- **Local models only.** Everything runs on `qwen2.5:14b` and `llama3.1:8b` so the results are
-  reproducible without an API key. A frontier judge would very likely close part of the
-  `unsupported_claim` gap; this repository does not claim otherwise, it just does not measure it.
+- **Two local models, one engine version each.** Everything runs on `qwen2.5:14b` and
+  `llama3.1:8b` so the results are reproducible without an API key. The paired zero on
+  reply-unchanged faults holds for any judge that reads only the request and reply; the other
+  magnitudes are for these models, and the outcome judge's recall moved between Ollama 0.30.11
+  and 0.33.3. The `unsupported_claim` result rests on four invented sentences.
+- **A small clean set, and faults at 75% of the set.** No false alarm in 100 clean runs bounds a
+  judge's rate only below 3.6%. Precision, F1, ECE and Brier score here are not deployment
+  values.
 - **Confidence is self-reported.** Single-pass judges state a number; only the ensemble's
-  confidence is an estimate of anything, and that is visible in the ECE column.
+  confidence is computed from samples.
 - **Two of the six types share a blurry border.** A policy fetched for an invented SKU is
   simultaneously an ungrounded argument and a tool that does not serve the sub-goal. The
   confusion matrix charges the judge for choosing the other reading, which overstates its
@@ -401,12 +481,12 @@ questions and only the first one is answered here.
 
 ## References
 
-- Zhang et al. — *AgenTracer: Failure Attribution in LLM Systems* ([arXiv:2509.03312](https://arxiv.org/abs/2509.03312)). Programmatic fault injection into successful trajectories to build annotated trajectory–error pairs.
+- Zhang et al., *AgenTracer: Failure Attribution in LLM Systems* ([arXiv:2509.03312](https://arxiv.org/abs/2509.03312)). Programmatic fault injection into successful trajectories to build annotated trajectory–error pairs.
 - *Beyond the Final Answer: Evaluating the Reasoning Trajectories of Tool-Augmented Agents* ([arXiv:2510.02837](https://arxiv.org/abs/2510.02837)).
 - *TRAJECT-Bench: A Trajectory-Aware Benchmark for Evaluating Agentic Tool Use* ([arXiv:2510.04550](https://arxiv.org/abs/2510.04550)).
-- Guo et al. — *Automatic Failure Attribution and Critical Step Prediction for Multi-Agent Systems* ([arXiv:2509.08682](https://arxiv.org/abs/2509.08682)).
-- Mohammadi et al. — *EvalMORAAL: Interpretable Chain-of-Thought and LLM-as-Judge Evaluation for Moral Alignment in LLMs*, \*SEM 2026 ([paper](https://aclanthology.org/2026.starsem-conference.34/)). The judge design here — reasoning before verdict, interpretable rationale, stated confidence — comes from this work.
-- Mohammadi et al. — *Assessing the Reliability of LLM Annotations in the Context of Demographic Bias and Model Explanation*, GeBNLP @ ACL 2025 ([doi](https://doi.org/10.18653/v1/2025.gebnlp-1.9)). On treating a model's labels as measurements that need their own reliability estimate.
+- Guo et al., *Automatic Failure Attribution and Critical Step Prediction for Multi-Agent Systems* ([arXiv:2509.08682](https://arxiv.org/abs/2509.08682)).
+- Mohammadi et al., *EvalMORAAL: Interpretable Chain-of-Thought and LLM-as-Judge Evaluation for Moral Alignment in LLMs*, \*SEM 2026 ([paper](https://aclanthology.org/2026.starsem-conference.34/)). The judge design here comes from this work: reasoning before the verdict, an interpretable rationale, and a stated confidence.
+- Mohammadi et al., *Assessing the Reliability of LLM Annotations in the Context of Demographic Bias and Model Explanation*, GeBNLP @ ACL 2025 ([doi](https://doi.org/10.18653/v1/2025.gebnlp-1.9)). On treating a model's labels as measurements that need their own reliability estimate.
 
 ## Part of evalstack
 
@@ -416,8 +496,22 @@ and the two chains that run end to end.
 
 ## Citation
 
-If this benchmark is useful in your research, please cite it (see
+If this benchmark is useful in your research, please cite the paper (see
 [CITATION.cff](CITATION.cff)):
+
+```bibtex
+@inproceedings{mohammadi2026trajectoryjudge,
+  author        = {Mohammadi, Hadi},
+  title         = {trajectory-judge: What Outcome-Only LLM Judges Miss on Agent Trajectories},
+  booktitle     = {NeurIPS 2026 Workshop: Who Verifies the Agents? Toward Reliable Agent Development},
+  year          = {2026},
+  eprint        = {2609.00038},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2609.00038}
+}
+```
+
+and the software:
 
 ```bibtex
 @software{mohammadi_trajectory_judge,
@@ -425,26 +519,13 @@ If this benchmark is useful in your research, please cite it (see
   title   = {trajectory-judge: measuring what LLM judges miss when an agent reaches the right answer the wrong way},
   url     = {https://github.com/mohammadi-hadi/trajectory-judge},
   doi     = {10.5281/zenodo.21797926},
-  version = {0.1.0},
+  version = {0.2.0},
   year    = {2026}
 }
 ```
 
-The accompanying paper is on arXiv as
-[arXiv:2609.00038](https://arxiv.org/abs/2609.00038):
-
-```bibtex
-@misc{mohammadi2026trajectoryjudge,
-  author        = {Mohammadi, Hadi},
-  title         = {trajectory-judge: What Outcome-Only LLM Judges Miss on Agent Trajectories},
-  year          = {2026},
-  eprint        = {2609.00038},
-  archivePrefix = {arXiv},
-  primaryClass  = {cs.CL},
-  url           = {https://arxiv.org/abs/2609.00038}
-}
-```
+Written by [Hadi Mohammadi](https://mohammadi.cv).
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).

@@ -34,10 +34,11 @@ class Scores:
     precision: float = 0.0
     recall: float = 0.0
     f1: float = 0.0
-    #: Recall restricted to faults that left the customer-visible outcome correct.
+    #: Recall restricted to faults that left the environment outcome correct (reply text is not
+    #: part of it).
     silent_recall: float = 0.0
     silent_n: int = 0
-    #: Recall on faults that also broke the outcome, i.e. the easy half.
+    #: Recall on faults that broke the environment outcome.
     loud_recall: float = 0.0
     loud_n: int = 0
     #: Share of clean trajectories wrongly flagged.

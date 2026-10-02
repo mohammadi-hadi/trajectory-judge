@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "trajectory-judge"
-version = "0.1.0"
+version = "0.2.0"
 description = "Measuring what LLM judges miss when an agent reaches the right answer the wrong way"
 readme = "README.md"
 license = "MIT"
@@ -44,6 +44,7 @@ dev = [
   "ruff>=0.5",
   "mypy>=1.10",
   "matplotlib>=3.8",
+  "numpy>=1.26",
   "build>=1.2",
   "twine>=6.1",
 ]

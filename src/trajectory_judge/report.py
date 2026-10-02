@@ -75,7 +75,8 @@ def summary_table(scores: list[Scores]) -> str:
         f"| `{s.judge_id}` | {s.clean_n} | {s.silent_n} | {s.loud_n} |\n" for s in scores
     )
     footer += (
-        "\nA *silent* fault left the customer-visible outcome correct; a *loud* one did not.\n"
+        "\nA *silent* fault left the environment outcome (the refund or escalation) correct; "
+        "a *loud* one did not. Reply text is not part of the outcome.\n"
         "\n`n/a` under step localisation means the judge has no step field to fill: the "
         "outcome-only judge never sees the steps, so it is not asked to name one.\n"
         "\n**The `programmatic` row's ECE is not a measurement.** The rule engine has no opinion "
@@ -142,7 +143,7 @@ def agent_table(episodes: list[Trajectory]) -> str:
     out = f"Episodes played: **{total}**\n\n| Observation | Count | Share |\n|---|---:|---:|\n"
     for label, value in (
         ("flagged by the rule checker or wrong outcome", flagged),
-        ("wrong customer-visible outcome", wrong_outcome),
+        ("wrong environment outcome", wrong_outcome),
         ("faulty but outcome still correct", silent),
     ):
         out += f"| {label} | {value} | {_fmt(value / total, 2)} |\n"
@@ -205,7 +206,9 @@ def _figures(
     ax.set_xticklabels(labels, rotation=20, ha="right", fontsize=8)
     ax.set_ylabel("recall")
     ax.set_ylim(0, 1.05)
-    ax.set_title("Fault recall, split by whether the fault changed the answer", fontsize=10)
+    ax.set_title(
+        "Fault recall, split by whether the fault broke the environment outcome", fontsize=10
+    )
     # Legend under the axes: every bar reaches the top of the plot, so there is no room inside.
     ax.legend(frameon=False, fontsize=8, ncol=3, loc="upper center", bbox_to_anchor=(0.5, -0.30))
     ax.spines[["top", "right"]].set_visible(False)

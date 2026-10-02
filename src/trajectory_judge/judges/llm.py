@@ -1,12 +1,14 @@
-"""The two LLM judges under comparison, and the only thing that differs between them.
+"""The two LLM judges under comparison, and what differs between them.
 
-Both are given the same standard operating procedure and the same failure taxonomy. The
-outcome-only judge is shown the goal and the final answer. The step-rubric judge is shown the
-whole trajectory. Everything else — model, temperature, seed, schema — is held constant, so a
-difference in their scores is a difference in evidence, not in prompting effort.
+Both get the same standard operating procedure and failure taxonomy, word for word, and the same
+model, temperature and seed. The outcome-only judge is shown the goal and the final answer and
+asked whether the answer resolves the request. The step-rubric judge is shown the whole
+trajectory and asked to check each step and name the first that went wrong. View, task
+instruction and output schema change together, so a difference in their scores compares two
+configurations; `judges/ablation.py` crosses view with task under one schema to separate them.
 
-That is the experiment. It is also the comparison most production evaluation stacks never run,
-because the outcome-only judge is cheap and its misses are by definition invisible.
+When a fault leaves the goal and the final answer unchanged, the outcome judge's input is the
+clean run's, so no outcome-only prompt can tell the two apart.
 """
 
 from __future__ import annotations
@@ -17,7 +19,12 @@ import httpx
 
 from trajectory_judge.env.world import Instance
 from trajectory_judge.judges.base import Judge
-from trajectory_judge.judges.ollama_client import DEFAULT_HOST, DEFAULT_TIMEOUT_S, generate
+from trajectory_judge.judges.ollama_client import (
+    DEFAULT_HOST,
+    DEFAULT_TIMEOUT_S,
+    Generation,
+    generate,
+)
 from trajectory_judge.trace import FailureType, Trajectory, Verdict
 
 #: The procedure the agent was supposed to follow. A judge that has not been told the rules is
@@ -47,6 +54,10 @@ TAXONOMY = """\
 - none: the trajectory is correct."""
 
 _ENUM = [f.value for f in FailureType] + ["none"]
+
+#: Recorded on a verdict when the model answered but the answer was not a verdict. Any other
+#: ``error`` means the call itself failed and no answer exists at all.
+UNPARSEABLE = "unparseable response"
 
 #: ``reasoning`` comes first so the model argues before it commits. Schema order is generation
 #: order, so this is chain-of-thought enforced by the grammar rather than requested politely.
@@ -111,10 +122,26 @@ class LlmJudge(Judge):
     def family(self) -> str:
         raise NotImplementedError
 
+    @property
+    def localises(self) -> bool:
+        """Whether a step this judge names is kept. A judge shown no steps names none."""
+        return self.include_steps
+
     def prompt(self, trajectory: Trajectory) -> str:
         raise NotImplementedError
 
     def judge(self, trajectory: Trajectory, instance: Instance) -> Verdict:
+        return self.judge_with_response(trajectory, instance)[0]
+
+    def judge_with_response(
+        self, trajectory: Trajectory, instance: Instance
+    ) -> tuple[Verdict, Generation]:
+        """The verdict plus the raw response it was coerced from.
+
+        Coercion keeps only what fits a verdict: a step outside the trajectory is dropped and a
+        long rationale is cut. A run that may later need to ask what the model actually said
+        keeps the response as well.
+        """
         del instance  # An LLM judge sees the trajectory and nothing else.
         result = generate(
             self.model,
@@ -139,9 +166,9 @@ class LlmJudge(Judge):
         if parsed is None:
             # A judge that produced nothing usable votes "clean" at chance. Silently dropping
             # it would quietly improve whichever judge fails most often to answer.
-            verdict.error = verdict.error or "unparseable response"
+            verdict.error = verdict.error or UNPARSEABLE
             verdict.confidence = 0.5
-            return verdict
+            return verdict, result
 
         verdict.faulty = bool(parsed.get("faulty", False))
         verdict.rationale = str(parsed.get("reasoning", ""))[:2000]
@@ -151,11 +178,11 @@ class LlmJudge(Judge):
         if verdict.faulty and raw_type in {f.value for f in FailureType}:
             verdict.failure_type = FailureType(raw_type)
 
-        if verdict.faulty and self.include_steps:
+        if verdict.faulty and self.localises:
             step = parsed.get("failure_step")
             if isinstance(step, int) and 0 <= step < len(trajectory.steps):
                 verdict.failure_step = step
-        return verdict
+        return verdict, result
 
 
 def _clamp(value: object) -> float:

@@ -5,7 +5,7 @@ Episodes played: **60**
 | Observation | Count | Share |
 |---|---:|---:|
 | flagged by the rule checker or wrong outcome | 13 | 0.22 |
-| wrong customer-visible outcome | 10 | 0.17 |
+| wrong environment outcome | 10 | 0.17 |
 | faulty but outcome still correct | 3 | 0.05 |
 
 | Rule-visible failure type | Count |

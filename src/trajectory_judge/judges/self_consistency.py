@@ -1,14 +1,14 @@
-"""Sample the step-rubric judge k times and vote.
+"""Sample the step-rubric judge k times and take a majority vote.
 
 The expectation was that vote share would be a better confidence signal than a number a single
-judge asserts about itself. On this benchmark it is not: at k=3 the ensemble matches the
-single-pass judge on detection, loses slightly on silent recall and type attribution, and is
-*worse* calibrated (ECE 0.084 against 0.033), because three votes can only ever express two
-confidence levels and neither lands near the observed accuracy. It costs three times as much.
+judge asserts about itself. On this benchmark, at k=3, the ensemble matches the single-pass judge
+on detection and costs three times as much. Its ECE is higher (0.084 against 0.033) because
+three votes can express only two confidence levels, but its Brier score is not measurably
+different, so "worse calibrated" would say more than the data do.
 
-The row stays in the results table because a negative result that cost 3x is worth publishing,
-and because it settles a question a single pass cannot: the failures it misses are missed by
-all three samples, so they are systematic, not sampling noise.
+The row stays in the results table because a negative result that cost 3x is worth publishing.
+Most of the faults it misses are missed by all three samples (32 of 42 invented promises), so
+those errors are systematic rather than sampling noise.
 
 Ties go to "clean". With an odd k there are none, but a conservative default matters more than
 it looks: on a task where the base rate of faults is high, breaking ties toward "faulty" would

@@ -35,7 +35,7 @@ def test_dataset_is_balanced_and_deterministic() -> None:
     assert all(t.instance_id in instances for t in trajectories)
 
 
-def test_any_prefix_of_the_dataset_is_a_stratified_sample() -> None:
+def test_a_prefix_of_the_dataset_mixes_every_partition() -> None:
     """Subset judges score a prefix, so a prefix must not be all-clean or one failure type.
 
     Built in order the set is clean-block-then-type-blocks, and a 150-trajectory prefix of 400

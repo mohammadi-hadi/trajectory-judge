@@ -1,12 +1,16 @@
 {
   "title": "trajectory-judge: measuring what LLM judges miss when an agent reaches the right answer the wrong way",
-  "description": "A controlled comparison of how well LLM judges detect faults in tool-using agent trajectories, under conditions where the ground truth is known by construction. A synthetic support-desk environment with a scripted oracle policy provides known-correct behaviour; a six-type fault injector then breaks exactly one step at a known index and records whether the customer-visible outcome survived, which stratifies failures into silent and loud. Five judges - a programmatic rule checker, an outcome-only judge, a step-rubric judge at two model sizes, and a self-consistency ensemble - are scored on detection, step localisation, failure-type classification, calibration and cost over 400 trajectories. Every raw verdict is committed, so all tables and figures rebuild offline with no model calls.",
+  "description": "A controlled study of what LLM judges of tool-using agents actually detect, under conditions where the ground truth is known by construction. A synthetic support-desk environment with a scripted oracle gives known-correct runs; a six-type injector breaks one step at a known index, keeps each fault's clean parent, and records whether the environment outcome survived and whether the final reply changed. Five judges (a rule checker, an outcome-only judge, a step-rubric judge with two models, and a self-consistency ensemble) are scored on detection, localisation, typing, calibration and cost over 400 trajectories. Comparing each fault with its clean parent shows that recall can credit a judge with detection it does not have. Every raw verdict is committed, so all tables and figures rebuild offline with no model calls.",
   "creators": [
-    {"name": "Mohammadi, Hadi", "orcid": "0000-0003-0860-9200", "affiliation": "Utrecht University"}
+    {
+      "name": "Mohammadi, Hadi",
+      "orcid": "0000-0003-0860-9200",
+      "affiliation": "Utrecht University"
+    }
   ],
   "license": "mit",
   "upload_type": "software",
-  "version": "v0.1.0",
+  "version": "v0.2.0",
   "keywords": [
     "LLM-as-judge",
     "agent evaluation",
@@ -21,6 +25,11 @@
       "identifier": "https://github.com/mohammadi-hadi/trajectory-judge",
       "relation": "isSupplementTo",
       "scheme": "url"
+    },
+    {
+      "identifier": "arXiv:2609.00038",
+      "relation": "isDocumentedBy",
+      "scheme": "arxiv"
     }
   ]
 }

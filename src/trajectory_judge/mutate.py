@@ -4,7 +4,9 @@ The technique is not new — AgenTracer, AgentRx and TRAJECT-Bench all build gro
 way. What matters here is the discipline around it:
 
 1. **Mutations edit the call list, then replay against a fresh world.** Observations are never
-   hand-written, so a mutant is as internally consistent as a real run.
+   hand-written, so they are consistent with the calls. The final answer is kept from the clean
+   run unless the mutation is about it (premature_stop, unsupported_claim), so where a mutation
+   changes the refund amount the reply still states the authorised one.
 2. **Each mutation targets exactly one failure type.** Where a mutation would trip a second
    rule as a side effect (a deleted eligibility check leaving the refund amount ungrounded,
    for instance), the mutation is written so it does not — otherwise the confusion matrix
