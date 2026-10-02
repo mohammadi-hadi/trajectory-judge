@@ -98,8 +98,8 @@ def main(out: Path = OUT) -> None:
         ("DeltaSelfconsStepExact", "selfcons_minus_step_step_exact"),
     ]:
         d = ci["deltas"][key]
-        emit(dname, f"{d['point']:+.3f}")
-        emit(f"{dname}CI", f"[{d['lo']:+.3f}, {d['hi']:+.3f}]")
+        emit(dname, signed(d["point"], 3))
+        emit(f"{dname}CI", signed_ci(d["lo"], d["hi"], places=3))
 
     # Counts and derived quantities, recomputed from the raw files.
     by_judge: dict[str, list[dict]] = {}
@@ -310,12 +310,17 @@ def emit_pair_example(emit, trajectories: list[dict], by_judge: dict[str, list[d
     emit("PairExStep", str(s_fault["failure_step"]))
 
 
+def minus(text: str) -> str:
+    """Set the sign as math, so a negative number prints a minus and not a hyphen in text."""
+    return text.replace("-", "\\ensuremath{-}")
+
+
 def signed(x: float, places: int = 2) -> str:
-    return f"{x:+.{places}f}"
+    return minus(f"{x:+.{places}f}")
 
 
 def signed_ci(lo: float, hi: float, places: int = 2) -> str:
-    return f"[{lo:+.{places}f}, {hi:+.{places}f}]"
+    return minus(f"[{lo:+.{places}f}, {hi:+.{places}f}]")
 
 
 def pvalue(p: float | None) -> str:
@@ -440,7 +445,12 @@ def emit_paired(emit, paired: dict) -> None:
         ]:
             emit(f"{jname}{mname}", fmt(t[key]["point"], places))
             lo, hi = t[key]["ci"]
-            emit(f"{jname}{mname}CI", "---" if hi - lo < 1e-9 else f"[{lo:.2f}, {hi:.2f}]")
+            # Brier intervals are narrower than two decimals can show next to a 3-decimal point.
+            width = 3 if mname.startswith("Brier") else 2
+            emit(
+                f"{jname}{mname}CI",
+                "---" if hi - lo < 1e-9 else f"[{lo:.{width}f}, {hi:.{width}f}]",
+            )
         if jid in loc:
             c = loc[jid]
             for mname, key in [
