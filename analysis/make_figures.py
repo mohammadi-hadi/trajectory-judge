@@ -211,7 +211,14 @@ def fig_silent_vs_loud(trajectories, verdicts) -> None:
             label="clean parents flagged",
         ),
         plt.Line2D(
-            [], [], marker="P", ls="", markersize=4.5, color="#777777", label="faults flagged"
+            [],
+            [],
+            marker="s",
+            ls="",
+            markersize=4.5,
+            markerfacecolor="#777777",
+            markeredgecolor=INK,
+            label="faults flagged (filled marker)",
         ),
     ]
     fig.legend(
@@ -435,8 +442,9 @@ def fig_calibration(trajectories, verdicts) -> None:
     step_curve = curves["step:qwen2.5:14b"]
     ax.annotate(
         "step (14B)",
-        xy=step_curve[-1][:2],
-        xytext=(6, 4),
+        xy=step_curve[0][:2],
+        xytext=(-6, -2),
+        ha="right",
         textcoords="offset points",
         fontsize=7.2,
         color=INK,
