@@ -1,12 +1,16 @@
-"""Emit paper/numbers.tex: every number the paper quotes, as a LaTeX macro.
+"""Emit numbers.tex: every number the paper quotes, as a LaTeX macro.
 
-Reads analysis/ci.json plus the raw JSONL and writes one \\newcommand per value,
-so no result number is ever typed by hand in the prose. Deterministic; rerunning
-produces a byte-identical file.
+Reads analysis/ci.json, analysis/paired.json and the raw JSONL and writes one
+\\newcommand per value, so no result number is ever typed by hand in the prose.
+Deterministic; rerunning produces a byte-identical file.
+
+By default the file goes next to the paper's main.tex. With --out it goes anywhere:
+`--out analysis/numbers.tex` rebuilds the copy committed in the code repository.
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 
@@ -51,7 +55,7 @@ def ci_str(cell: dict, places: int = 2) -> str:
     return f"[{cell['lo']:.{places}f}, {cell['hi']:.{places}f}]"
 
 
-def main() -> None:
+def main(out: Path = OUT) -> None:
     ci = json.loads((ROOT / "analysis" / "ci.json").read_text())
     trajectories = [
         json.loads(line) for line in (DATA / "trajectories.jsonl").read_text().splitlines()
@@ -248,12 +252,12 @@ def main() -> None:
         emit_paired(emit, json.loads(paired_path.read_text()))
     emit_pair_example(emit, trajectories, by_judge)
 
-    if not (OUT.parent / "main.tex").exists():
-        # From the code repository this path is not the paper's source directory; writing
-        # there would leave a stray numbers.tex that nothing reads.
-        raise SystemExit(f"{OUT.parent} holds no main.tex; run this from the paper repository")
-    OUT.write_text("\n".join(lines) + "\n")
-    print(f"wrote {OUT} ({len(lines) - 2} macros)")
+    if out == OUT and not (OUT.parent / "main.tex").exists():
+        # From the code repository the default path is not the paper's source directory;
+        # writing there would leave a stray numbers.tex that nothing reads.
+        raise SystemExit(f"{OUT.parent} holds no main.tex; pass --out analysis/numbers.tex")
+    out.write_text("\n".join(lines) + "\n")
+    print(f"wrote {out} ({len(lines) - 2} macros)")
 
 
 def emit_pair_example(emit, trajectories: list[dict], by_judge: dict[str, list[dict]]) -> None:
@@ -625,4 +629,6 @@ def emit_ablation(emit, abl: dict, august_recall: dict[str, float]) -> None:
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Emit the paper's numbers as LaTeX macros.")
+    parser.add_argument("--out", type=Path, default=OUT, help="where to write numbers.tex")
+    main(parser.parse_args().out)
