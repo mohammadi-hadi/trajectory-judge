@@ -1,4 +1,4 @@
-.PHONY: install test lint build demo run report clean
+.PHONY: install test lint build demo run report numbers clean
 
 MODEL ?= qwen2.5:14b
 N     ?= 400
@@ -36,6 +36,13 @@ run:
 # Rebuilds every table and figure from committed JSONL. Zero model calls.
 report:
 	trajectory-judge report --raw results/raw --out results
+
+# Rebuilds the paper's intervals, paired estimates and macros from the committed verdicts in
+# data/. Zero model calls; every output is byte-identical to the committed file.
+numbers:
+	python analysis/bootstrap_ci.py
+	python analysis/paired_ci.py
+	python analysis/make_numbers.py --out analysis/numbers.tex
 
 clean:
 	rm -rf results/demo .pytest_cache .ruff_cache .mypy_cache
