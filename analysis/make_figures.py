@@ -34,10 +34,10 @@ JUDGES = [
 ]
 SHORT = {
     "programmatic": "rules",
-    "outcome:qwen2.5:14b": "outcome (14B)",
-    "step:qwen2.5:14b": "step (14B)",
-    "step:llama3.1:8b": "step (8B)",
-    "selfcons3:qwen2.5:14b": "selfcons k=3 (14B)",
+    "outcome:qwen2.5:14b": "outcome",
+    "step:qwen2.5:14b": "step 14B",
+    "step:llama3.1:8b": "step 8B",
+    "selfcons3:qwen2.5:14b": "selfcons",
 }
 # Categorical slots (validated adjacent order) for the four model judges; gray for rules.
 COLOR = {
