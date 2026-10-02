@@ -3,6 +3,13 @@
 Written and pushed before any of these runs started. The commit that adds this file is the
 timestamp; nothing below was changed after the first verdict existed.
 
+Note added on 2 October 2026, after the runs: the sentence above is not exact. The last item
+under "Setup" (the outcome judge with its own schema) was added in commit 160620d, after an
+8-trajectory smoke test on this engine and before the queue started (`engine.txt` logs the
+start at 18:50:07 UTC; 160620d was pushed at 18:49:56 UTC, c16c2eb at 18:41:57 UTC). The
+contrasts and decision rules are unchanged since c16c2eb, and nothing else in this file has
+been edited.
+
 ## Why this run exists
 
 The published outcome judge and step judge differ in what they are shown (the goal and the final
