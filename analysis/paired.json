@@ -101,6 +101,138 @@
         "point": 0.0
       }
     },
+    "flags_by_type": {
+      "A": {
+        "hallucinated_argument": {
+          "k": 11,
+          "n": 50
+        },
+        "ignored_observation": {
+          "k": 13,
+          "n": 50
+        },
+        "premature_stop": {
+          "k": 50,
+          "n": 50
+        },
+        "skipped_precondition": {
+          "k": 10,
+          "n": 50
+        },
+        "unsupported_claim": {
+          "k": 18,
+          "n": 50
+        },
+        "wrong_tool": {
+          "k": 11,
+          "n": 50
+        }
+      },
+      "Ao": {
+        "hallucinated_argument": {
+          "k": 11,
+          "n": 50
+        },
+        "ignored_observation": {
+          "k": 13,
+          "n": 50
+        },
+        "premature_stop": {
+          "k": 50,
+          "n": 50
+        },
+        "skipped_precondition": {
+          "k": 10,
+          "n": 50
+        },
+        "unsupported_claim": {
+          "k": 18,
+          "n": 50
+        },
+        "wrong_tool": {
+          "k": 11,
+          "n": 50
+        }
+      },
+      "B": {
+        "hallucinated_argument": {
+          "k": 10,
+          "n": 50
+        },
+        "ignored_observation": {
+          "k": 5,
+          "n": 50
+        },
+        "premature_stop": {
+          "k": 50,
+          "n": 50
+        },
+        "skipped_precondition": {
+          "k": 8,
+          "n": 50
+        },
+        "unsupported_claim": {
+          "k": 19,
+          "n": 50
+        },
+        "wrong_tool": {
+          "k": 9,
+          "n": 50
+        }
+      },
+      "C": {
+        "hallucinated_argument": {
+          "k": 32,
+          "n": 50
+        },
+        "ignored_observation": {
+          "k": 50,
+          "n": 50
+        },
+        "premature_stop": {
+          "k": 47,
+          "n": 50
+        },
+        "skipped_precondition": {
+          "k": 50,
+          "n": 50
+        },
+        "unsupported_claim": {
+          "k": 13,
+          "n": 50
+        },
+        "wrong_tool": {
+          "k": 6,
+          "n": 50
+        }
+      },
+      "D": {
+        "hallucinated_argument": {
+          "k": 50,
+          "n": 50
+        },
+        "ignored_observation": {
+          "k": 50,
+          "n": 50
+        },
+        "premature_stop": {
+          "k": 44,
+          "n": 50
+        },
+        "skipped_precondition": {
+          "k": 50,
+          "n": 50
+        },
+        "unsupported_claim": {
+          "k": 9,
+          "n": 50
+        },
+        "wrong_tool": {
+          "k": 50,
+          "n": 50
+        }
+      }
+    },
     "organic": {
       "A": {
         "clean_flagged": 18,
@@ -118,6 +250,28 @@
         "clean_flagged_repeat_call": 4,
         "missed": 7,
         "missed_stop_after_lookup": 7
+      }
+    },
+    "original_clean_flags": {
+      "A": {
+        "k": 23,
+        "n": 100
+      },
+      "Ao": {
+        "k": 23,
+        "n": 100
+      },
+      "B": {
+        "k": 20,
+        "n": 100
+      },
+      "C": {
+        "k": 0,
+        "n": 100
+      },
+      "D": {
+        "k": 0,
+        "n": 100
       }
     },
     "paired": {
@@ -785,6 +939,28 @@
       "schema_swap_identical": {
         "k": 441,
         "n": 441
+      }
+    },
+    "skipped_silent_flags": {
+      "A": {
+        "k": 4,
+        "n": 25
+      },
+      "Ao": {
+        "k": 4,
+        "n": 25
+      },
+      "B": {
+        "k": 5,
+        "n": 25
+      },
+      "C": {
+        "k": 25,
+        "n": 25
+      },
+      "D": {
+        "k": 25,
+        "n": 25
       }
     }
   },

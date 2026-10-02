@@ -771,6 +771,32 @@ def ablation(published_verdicts: list[dict]) -> dict | None:
 
     # Reproducibility against v0.1.0 (engine 0.30.11) on the 400 shared trajectories.
     pub = by_key(published_verdicts)
+
+    # Flags per fault type over every fault of the type, on the silent skipped_precondition
+    # faults (their reply states the amount that was refunded, so it carries no stale
+    # amount), and on the clean runs the v0.1.0 judges also saw.
+    by_type: dict[str, list[dict]] = {}
+    for t in trajectories:
+        if t["label"]["faulty"]:
+            by_type.setdefault(t["label"]["failure_type"], []).append(t)
+    skipped_silent = [t for t in by_type["skipped_precondition"] if t["label"]["outcome_correct"]]
+    original_clean = [tid for tid in clean if (OUTCOME, tid) in pub]
+
+    def count(jid: str, ids: list[str]) -> dict[str, int]:
+        return {"k": sum(vmap[(jid, tid)]["faulty"] for tid in ids), "n": len(ids)}
+
+    flags_by_type = {
+        name: {
+            ftype: count(jid, [t["trajectory_id"] for t in ts])
+            for ftype, ts in sorted(by_type.items())
+        }
+        for name, jid in cells.items()
+    }
+    skipped_silent_flags = {
+        name: count(jid, [t["trajectory_id"] for t in skipped_silent])
+        for name, jid in cells.items()
+    }
+    original_clean_flags = {name: count(jid, original_clean) for name, jid in cells.items()}
     repro: dict[str, dict] = {}
     for name, old in [("D", STEP), ("A", OUTCOME), ("Ao", OUTCOME)]:
         if name not in cells:
@@ -824,6 +850,9 @@ def ablation(published_verdicts: list[dict]) -> dict | None:
         "contrasts": contrasts,
         "reproducibility": repro,
         "premature_raw_steps": raw_steps,
+        "flags_by_type": flags_by_type,
+        "skipped_silent_flags": skipped_silent_flags,
+        "original_clean_flags": original_clean_flags,
     }
     organic = DATA / "organic_verdicts.jsonl"
     if organic.exists():
