@@ -246,6 +246,7 @@ def main() -> None:
     paired_path = ROOT / "analysis" / "paired.json"
     if paired_path.exists():
         emit_paired(emit, json.loads(paired_path.read_text()))
+    emit_pair_example(emit, trajectories, by_judge)
 
     if not (OUT.parent / "main.tex").exists():
         # From the code repository this path is not the paper's source directory; writing
@@ -253,6 +254,56 @@ def main() -> None:
         raise SystemExit(f"{OUT.parent} holds no main.tex; run this from the paper repository")
     OUT.write_text("\n".join(lines) + "\n")
     print(f"wrote {OUT} ({len(lines) - 2} macros)")
+
+
+def emit_pair_example(emit, trajectories: list[dict], by_judge: dict[str, list[dict]]) -> None:
+    """Macros for the worked example in the first figure: one fault and its clean parent.
+
+    The pair is the first, by trajectory id, silent skipped_precondition fault whose clean
+    parent the outcome judge also flags. The asserts are the figure's claims: the outcome
+    judge returns one verdict for both runs, and the step judge flags only the fault, at the
+    labelled step and with the labelled type.
+    """
+    by_id = {t["trajectory_id"]: t for t in trajectories}
+    outcome = {v["trajectory_id"]: v for v in by_judge["outcome:qwen2.5:14b"]}
+    step = {v["trajectory_id"]: v for v in by_judge["step:qwen2.5:14b"]}
+    fault = next(
+        t
+        for t in sorted(trajectories, key=lambda t: t["trajectory_id"])
+        if t["label"]["failure_type"] == "skipped_precondition"
+        and t["label"]["outcome_correct"]
+        and f"{t['instance_id']}-clean" in by_id
+        and outcome[f"{t['instance_id']}-clean"]["faulty"]
+    )
+    parent = by_id[f"{fault['instance_id']}-clean"]
+    assert fault["goal"] == parent["goal"] and fault["final_answer"] == parent["final_answer"]
+    o_fault, o_parent = outcome[fault["trajectory_id"]], outcome[parent["trajectory_id"]]
+    for key in ("faulty", "confidence", "failure_type", "rationale"):
+        assert o_fault[key] == o_parent[key], key
+    s_fault, s_parent = step[fault["trajectory_id"]], step[parent["trajectory_id"]]
+    assert o_fault["faulty"] and s_fault["faulty"] and not s_parent["faulty"]
+    assert s_fault["failure_step"] == fault["label"]["failure_step"]
+    assert s_fault["failure_type"] == fault["label"]["failure_type"]
+    tools = [st["call"]["tool"] for st in parent["steps"]]
+    assert tools == [
+        "get_customer",
+        "lookup_order",
+        "get_policy",
+        "check_eligibility",
+        "issue_refund",
+        "reply",
+    ]
+    assert [st["call"]["tool"] for st in fault["steps"]] == tools[:3] + tools[4:]
+    refund = fault["steps"][fault["label"]["failure_step"]]["call"]
+    assert refund["tool"] == "issue_refund"
+    amount = f"{refund['args']['amount_eur']:.2f}"
+    assert f"EUR {amount} for order {refund['args']['order_id']}" in fault["final_answer"]
+    emit("PairExId", fault["instance_id"])
+    emit("PairExOrder", refund["args"]["order_id"])
+    emit("PairExAmount", amount)
+    emit("PairExOutcomeConf", f"{o_fault['confidence']:.2f}")
+    emit("PairExOutcomeType", o_fault["failure_type"].replace("_", "\\_"))
+    emit("PairExStep", str(s_fault["failure_step"]))
 
 
 def signed(x: float, places: int = 2) -> str:
@@ -461,13 +512,13 @@ def emit_paired(emit, paired: dict) -> None:
     emit("FAUpperBoundPct", "3.6\\%")  # Clopper-Pearson 95% upper bound on 0/100, in percent
 
     if "ablation" in paired:
-        emit_ablation(emit, paired["ablation"])
+        emit_ablation(emit, paired["ablation"], pub["outcome_per_type_recall"])
 
 
 ABL_NAME = {"A": "AblA", "B": "AblB", "C": "AblC", "D": "AblD", "Ao": "AblAo"}
 
 
-def emit_ablation(emit, abl: dict) -> None:
+def emit_ablation(emit, abl: dict, august_recall: dict[str, float]) -> None:
     """Macros for the October view-by-task cells (see results/ablation/PREDICTIONS.md)."""
     for short, jid in abl["cells"].items():
         name = ABL_NAME[short]
@@ -528,6 +579,36 @@ def emit_ablation(emit, abl: dict) -> None:
         emit("AblDPremStepThreeK", str(steps.get("3", 0)))
         emit("AblDPremDetectedN", str(sum(steps.values())))
         emit("AblDPremStepOtherK", str(sum(steps.values()) - steps.get("3", 0) - steps.get("4", 0)))
+    by_type = abl.get("flags_by_type", {})
+    if "A" in by_type:
+        # The outcome judge's prompt on the October engine: recall on the four reply-unchanged
+        # types, its largest move from the August value in points, and its flags on the clean
+        # runs both sessions judged.
+        same_types = (
+            "wrong_tool",
+            "hallucinated_argument",
+            "skipped_precondition",
+            "ignored_observation",
+        )
+        october = {t: by_type["A"][t]["k"] / by_type["A"][t]["n"] for t in same_types}
+        emit("AblARecallSameMinPct", pct(min(october.values())))
+        emit("AblARecallSameMaxPct", pct(max(october.values())))
+        emit(
+            "AblARecallMoveMaxPts",
+            str(max(round(abs(august_recall[t] - october[t]) * 100) for t in same_types)),
+        )
+        emit("AblAFAOrigK", str(abl["original_clean_flags"]["A"]["k"]))
+        emit("AblAFAOrigN", str(abl["original_clean_flags"]["A"]["n"]))
+    if "C" in by_type:
+        # The answer-only task with every step in view, by fault type (a post hoc split).
+        c = by_type["C"]
+        refund = [c["skipped_precondition"], c["ignored_observation"]]
+        emit("AblCRefundStepK", str(sum(r["k"] for r in refund)))
+        emit("AblCRefundStepN", str(sum(r["n"] for r in refund)))
+        emit("AblCSkippedSilentK", str(abl["skipped_silent_flags"]["C"]["k"]))
+        emit("AblCSkippedSilentN", str(abl["skipped_silent_flags"]["C"]["n"]))
+        emit("AblCHallucK", str(c["hallucinated_argument"]["k"]))
+        emit("AblCWrongToolK", str(c["wrong_tool"]["k"]))
     detail = abl.get("organic", {}).get("D_detail")
     if detail:
         emit("OrgDMissK", str(detail["missed"]))
