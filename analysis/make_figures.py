@@ -424,31 +424,11 @@ def fig_calibration(trajectories, verdicts) -> None:
                 ax.annotate(
                     f"n={count}",
                     xy=(cx, cy),
-                    xytext=(4, -9),
+                    xytext=(5, 3),
                     textcoords="offset points",
                     fontsize=6.2,
                     color="#666666",
                 )
-    # Direct labels on the two lines the analysis discusses most.
-    out_curve = curves["outcome:qwen2.5:14b"]
-    ax.annotate(
-        "outcome (14B)",
-        xy=out_curve[-1][:2],
-        xytext=(6, -12),
-        textcoords="offset points",
-        fontsize=7.2,
-        color=INK,
-    )
-    step_curve = curves["step:qwen2.5:14b"]
-    ax.annotate(
-        "step (14B)",
-        xy=step_curve[0][:2],
-        xytext=(-6, -2),
-        ha="right",
-        textcoords="offset points",
-        fontsize=7.2,
-        color=INK,
-    )
     ax.set_xlim(0.45, 1.06)
     ax.set_ylim(-0.02, 1.06)
     ax.set_xlabel("stated confidence (bin mean)")
@@ -473,11 +453,22 @@ def fig_confusion(trajectories, verdicts) -> None:
             matrix[row, TYPES.index(v["failure_type"])] += 1
         else:
             matrix[row, 6] += 1
-    fig, ax = plt.subplots(figsize=(4.8, 3.2))
+    fig, ax = plt.subplots(figsize=(6.2, 3.0))
     im = ax.imshow(matrix, cmap="Blues", vmin=0, vmax=50, aspect="auto")
-    names = [t.replace("_", " ") for t in TYPES]
-    ax.set_xticks(range(7), names + ["missed"], fontsize=6.4, rotation=30, ha="right")
-    ax.set_yticks(range(6), [t.replace("_", "\n") for t in TYPES], fontsize=6.4)
+    names = [t.replace("_", "\n") for t in TYPES]
+    # Columns are narrow, so the predicted types get short two-line labels.
+    short = [
+        "wrong\ntool",
+        "halluc.\nargument",
+        "skipped\nprecond.",
+        "ignored\nobs.",
+        "premature\nstop",
+        "unsupp.\nclaim",
+        "missed",
+    ]
+    ax.set_xticks(range(7), short, fontsize=7.5)
+    ax.set_yticks(range(6), names, fontsize=7.5)
+    ax.tick_params(length=0)
     ax.set_xlabel("predicted")
     ax.set_ylabel("true type")
     for r in range(6):
@@ -490,7 +481,7 @@ def fig_confusion(trajectories, verdicts) -> None:
                     str(v),
                     ha="center",
                     va="center",
-                    fontsize=7,
+                    fontsize=8,
                     color="white" if v > 28 else INK,
                 )
     for spine in ax.spines.values():
