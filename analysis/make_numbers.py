@@ -84,6 +84,8 @@ def main(out: Path = OUT) -> None:
             cell = cells[f"recall_{tid}"]
             emit(f"{jname}{tname}", fmt(cell["point"], 2))
             emit(f"{jname}{tname}CI", ci_str(cell))
+        # Two-decimal false-alarm rate, for tables whose other cells have two decimals.
+        emit(f"{jname}FATwo", fmt(cells["false_alarm_rate"]["point"], 2))
         emit(f"{jname}Cost", COST[jname])
         emit(f"{jname}StepN", str(ci["extras"][jid]["step_scored_n"]))
 
