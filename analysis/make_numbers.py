@@ -481,6 +481,8 @@ def emit_ablation(emit, abl: dict) -> None:
         same = cells["reply_same"]
         emit(f"{name}SameFlipK", str(same["b10"] + same["b01"]))
         for cname, cid in [
+            ("SameKept", "reply_same_kept"),
+            ("SameBroke", "reply_same_broke"),
             ("ReplySame", "reply_same"),
             ("ReplyChanged", "reply_changed"),
             ("Unsup", "unsupported_claim"),
