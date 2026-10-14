@@ -13,7 +13,7 @@
 </div>
 
 Paper: *trajectory-judge: What Outcome-Only LLM Judges Miss on Agent Trajectories*, NeurIPS 2026
-workshop "Who Verifies the Agents? Toward Reliable Agent Development"
+workshop "Who Verifies the Agents? Toward Reliable Agent Development" (accepted, poster)
 ([arXiv:2609.00038](https://arxiv.org/abs/2609.00038)). To rebuild its numbers, see
 [Reproducing the paper](#reproducing-the-paper).
 
