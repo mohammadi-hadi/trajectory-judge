@@ -481,7 +481,7 @@ a kind of early stop the injector never produces.
 
 ## References
 
-- Zhang et al., *AgenTracer: Failure Attribution in LLM Systems* ([arXiv:2509.03312](https://arxiv.org/abs/2509.03312)). Programmatic fault injection into successful trajectories to build annotated trajectory–error pairs.
+- Zhang et al., *AgenTracer: Who Is Inducing Failure in the LLM Agentic Systems?* ([arXiv:2509.03312](https://arxiv.org/abs/2509.03312)). Programmatic fault injection into successful trajectories to build annotated trajectory–error pairs.
 - *Beyond the Final Answer: Evaluating the Reasoning Trajectories of Tool-Augmented Agents* ([arXiv:2510.02837](https://arxiv.org/abs/2510.02837)).
 - *TRAJECT-Bench: A Trajectory-Aware Benchmark for Evaluating Agentic Tool Use* ([arXiv:2510.04550](https://arxiv.org/abs/2510.04550)).
 - Ma et al., *Automatic Failure Attribution and Critical Step Prediction Method for Multi-Agent Systems Based on Causal Inference* ([arXiv:2509.08682](https://arxiv.org/abs/2509.08682)).
