@@ -1,4 +1,4 @@
-.PHONY: install test lint build demo run report numbers clean
+.PHONY: install test lint build demo run report numbers page clean
 
 MODEL ?= qwen2.5:14b
 N     ?= 400
@@ -43,6 +43,10 @@ numbers:
 	python analysis/bootstrap_ci.py
 	python analysis/paired_ci.py
 	python analysis/make_numbers.py --out analysis/numbers.tex
+
+# Rebuilds the project page in docs/ (figures, link preview, index.html) from the same data.
+page:
+	python docs/make_page.py
 
 clean:
 	rm -rf results/demo .pytest_cache .ruff_cache .mypy_cache
