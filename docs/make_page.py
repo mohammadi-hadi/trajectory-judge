@@ -93,11 +93,19 @@ def macros() -> dict[str, str]:
     return out
 
 
-def fig_by_type(trajectories, verdicts) -> None:
-    """Per mistake type: how often each 14B judge flags the correct twin (ring) and the mistake (dot)."""
+def fig_by_type(trajectories, verdicts, narrow: bool = False) -> None:
+    """Per mistake type: how often each 14B judge flags the correct twin (ring) and the mistake (dot).
+
+    narrow=True stacks the two panels for phones, where side by side they shrink to unreadable.
+    """
     rates = mf.paired_rates_by_type(trajectories, verdicts, [OUTCOME, STEP])
     ys = [5.5, 4.5, 3.5, 2.5, 1.0, 0.0]
-    fig, axes = plt.subplots(1, 2, figsize=(8.4, 4.2), sharey=True, gridspec_kw={"wspace": 0.42})
+    if narrow:
+        fig, axes = plt.subplots(2, 1, figsize=(4.0, 7.4), gridspec_kw={"hspace": 0.55})
+    else:
+        fig, axes = plt.subplots(
+            1, 2, figsize=(8.4, 4.2), sharey=True, gridspec_kw={"wspace": 0.42}
+        )
     titles = {OUTCOME: "Reads the reply only", STEP: "Checks each step"}
     for ax, j in zip(axes, [OUTCOME, STEP], strict=True):
         color = UU_RED if j == OUTCOME else INK
@@ -129,24 +137,30 @@ def fig_by_type(trajectories, verdicts) -> None:
         ax.text(1.13, 6.35, "Δ", ha="left", va="center", fontsize=12, fontweight="bold")
         ax.spines["left"].set_visible(False)
         ax.tick_params(axis="y", length=0)
-    axes[0].set_yticks(ys)
-    axes[0].set_yticklabels([PLAIN_TYPE[t] for t, _ in mf.BY_TYPE_ROWS])
-    axes[0].text(-0.04, 6.38, "reply unchanged", fontsize=11, style="italic", va="center")
-    axes[0].text(-0.04, 1.62, "reply changed", fontsize=11, style="italic", va="center")
-    fig.savefig(
-        DOCS / "figures" / "by_type.svg", bbox_inches="tight", pad_inches=0.08, metadata=NO_DATE
-    )
+    for ax in axes if narrow else axes[:1]:
+        ax.set_yticks(ys)
+        ax.set_yticklabels([PLAIN_TYPE[t] for t, _ in mf.BY_TYPE_ROWS])
+        ax.text(-0.04, 6.38, "reply unchanged", fontsize=11, style="italic", va="center")
+        ax.text(-0.04, 1.62, "reply changed", fontsize=11, style="italic", va="center")
+    name = "by_type_narrow.svg" if narrow else "by_type.svg"
+    fig.savefig(DOCS / "figures" / name, bbox_inches="tight", pad_inches=0.08, metadata=NO_DATE)
     plt.close(fig)
 
 
-def fig_judges(ci, paired) -> None:
-    """Recall against Δ for the five judges, with false alarms on the 100 correct runs."""
+def fig_judges(ci, paired, narrow: bool = False) -> None:
+    """Recall against Δ for the five judges, with false alarms on the 100 correct runs.
+
+    narrow=True puts each judge's name above its bars instead of beside them, for phones.
+    """
     pub = paired["published"]
     order = ["programmatic", OUTCOME, STEP, "selfcons3:qwen2.5:14b", "step:llama3.1:8b"]
-    fig, ax = plt.subplots(figsize=(7.6, 3.9))
+    fig, ax = plt.subplots(figsize=(4.2, 5.6) if narrow else (7.6, 3.9))
     h = 0.38
+    step = 1.45 if narrow else 1.0
     for i, j in enumerate(order):
-        y = len(order) - 1 - i
+        y = (len(order) - 1 - i) * step
+        if narrow:
+            ax.text(0, y + h + 0.1, PLAIN_JUDGE[j], va="bottom", fontsize=12, color=INK)
         rec = ci["judges"][j]["recall"]["point"]
         dlt = pub["paired"][j]["all"]["delta"]
         color = UU_RED if j == OUTCOME else INK
@@ -175,9 +189,14 @@ def fig_judges(ci, paired) -> None:
             fontweight="bold",
             color=UU_RED if fa >= 10 else INK,
         )
-    ax.text(1.55, len(order) - 0.35, "false alarms", ha="right", va="bottom", fontsize=11)
-    ax.set_yticks(range(len(order)))
-    ax.set_yticklabels([PLAIN_JUDGE[j] for j in reversed(order)])
+    top = (len(order) - 1) * step + (0.75 if narrow else 0.65)
+    ax.text(1.55, top, "false alarms", ha="right", va="bottom", fontsize=11)
+    if narrow:
+        ax.set_yticks([])
+        ax.set_ylim(-0.6, top + 0.35)
+    else:
+        ax.set_yticks(range(len(order)))
+        ax.set_yticklabels([PLAIN_JUDGE[j] for j in reversed(order)])
     ax.set_xlim(0, 1.56)
     ax.set_xticks([0, 0.5, 1])
     ax.set_xticklabels(["0", "0.5", "1"])
@@ -190,16 +209,15 @@ def fig_judges(ci, paired) -> None:
     ax.legend(
         handles=handles,
         loc="upper center",
-        bbox_to_anchor=(0.42, -0.12),
-        ncol=2,
+        bbox_to_anchor=(0.42, -0.08 if narrow else -0.12),
+        ncol=1 if narrow else 2,
         frameon=False,
         fontsize=11,
         columnspacing=1.2,
         handlelength=1.4,
     )
-    fig.savefig(
-        DOCS / "figures" / "judges.svg", bbox_inches="tight", pad_inches=0.08, metadata=NO_DATE
-    )
+    name = "judges_narrow.svg" if narrow else "judges.svg"
+    fig.savefig(DOCS / "figures" / name, bbox_inches="tight", pad_inches=0.08, metadata=NO_DATE)
     plt.close(fig)
 
 
@@ -324,6 +342,7 @@ CSS = """
   .step { font-weight: 600; }
   .scroll { overflow-x: auto; }
   .run { display: flex; align-items: center; gap: 6px; min-width: 640px; margin: 4px 0; }
+  @media (max-width: 600px) { .run { flex-wrap: wrap; min-width: 0; row-gap: 6px; } }
   .runlabel { font-size: 13px; font-weight: 600; margin: 10px 0 2px; }
   .chip {
     border: 1px solid var(--grid); border-radius: 6px; padding: 4px 9px; font-size: 13px;
@@ -469,9 +488,10 @@ def page(m: dict[str, str], c: dict[str, int], has_poster: bool) -> str:
   </div>
 
   <h2>Many flags, but no real catches</h2>
-  <div class="figure"><img src="figures/by_type.svg" alt="For four mistake types that leave the
+  <div class="figure"><picture><source media="(max-width: 600px)"
+  srcset="figures/by_type_narrow.svg"><img src="figures/by_type.svg" alt="For four mistake types that leave the
   reply unchanged, the reply-only judge flags broken runs and their correct twins equally (delta
-  0.00), while the step-by-step judge reaches delta 1.00."></div>
+  0.00), while the step-by-step judge reaches delta 1.00."></picture></div>
   <p class="caption">Ring = correct twin, dot = broken run. On hidden mistakes (yellow band), the
   <span class="reply">reply-only judge</span> flags {m["tjOutcomeReplySameRecallMinPct"]} to
   {m["tjOutcomeReplySameRecallMaxPct"]} of them, but flags their twins just as often: the dot sits
@@ -514,8 +534,9 @@ def page(m: dict[str, str], c: dict[str, int], has_poster: bool) -> str:
   other three it catches {m["tjStepQUnsupOtherK"]} time in {m["tjStepQUnsupOtherN"]}.</p>
 
   <h2>Recall can fool you</h2>
-  <div class="figure"><img src="figures/judges.svg" alt="Recall and delta for five judges. The
-  small 8B judge has the highest recall, 0.99, and a delta of -0.01."></div>
+  <div class="figure"><picture><source media="(max-width: 600px)"
+  srcset="figures/judges_narrow.svg"><img src="figures/judges.svg" alt="Recall and delta for five judges. The
+  small 8B judge has the highest recall, 0.99, and a delta of -0.01."></picture></div>
   <p class="caption">Grey is how much a judge flags, black is how much it really catches. The
   small judge flags {m["tjStepLFlags"]} of {m["tjNTraj"]} runs: the best recall and no real
   catches. Asking the same judge 3 times costs 3&times; as much and does not help.</p>
@@ -561,8 +582,9 @@ def main() -> None:
     trajectories, verdicts, ci = mf.load()
     paired = json.loads((ROOT / "analysis" / "paired.json").read_text())
     m = macros()
-    fig_by_type(trajectories, verdicts)
-    fig_judges(ci, paired)
+    for narrow in (False, True):
+        fig_by_type(trajectories, verdicts, narrow)
+        fig_judges(ci, paired, narrow)
     social_card(m)
     counts = hidden_counts(trajectories, verdicts, paired)
     (DOCS / "index.html").write_text(page(m, counts, (DOCS / "poster.pdf").exists()))
