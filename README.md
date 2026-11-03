@@ -7,7 +7,7 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21797926.svg)](https://doi.org/10.5281/zenodo.21797926)
 [![arXiv](https://img.shields.io/badge/arXiv-2609.00038-b31b1b.svg)](https://arxiv.org/abs/2609.00038)
 [![Python](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/mohammadi-hadi/trajectory-judge/blob/main/LICENSE)
 
 *How much does an LLM judge miss when an agent reaches the right answer the wrong way?*
 
@@ -115,7 +115,7 @@ git diff --exit-code -- results/tables analysis    # nothing should change
 | `analysis/ci.json` | bootstrap intervals and differences between judges (`analysis/bootstrap_ci.py`) |
 | `analysis/paired.json` | paired discrimination against clean parents, the view-by-task ablation, the agent episodes (`analysis/paired_ci.py`) |
 | `analysis/numbers.tex` | every number the paper prints, as a LaTeX macro (`analysis/make_numbers.py`) |
-| `data/` | the files the analysis reads: flat-named copies of `results/`, described in [data/PROVENANCE.md](data/PROVENANCE.md) |
+| `data/` | the files the analysis reads: flat-named copies of `results/`, described in [data/PROVENANCE.md](https://github.com/mohammadi-hadi/trajectory-judge/blob/main/data/PROVENANCE.md) |
 | `results/ablation/` | the view-by-task runs: `PREDICTIONS.md` (written before the runs), `queue.sh` (what ran), `engine.txt` (engine version and model digest around every step), raw verdicts and raw model responses |
 
 `python analysis/make_figures.py` redraws the paper's figures and needs matplotlib. CI runs
@@ -193,7 +193,7 @@ the load on the bottleneck.
 
 ### What it costs
 
-Full method and tables in [bench/README.md](bench/README.md). Two measurements are kept apart:
+Full method and tables in [bench/README.md](https://github.com/mohammadi-hadi/trajectory-judge/blob/main/bench/README.md). Two measurements are kept apart:
 service overhead is measured against a stand-in backend that sleeps a known 250 ms, so what is
 left is this service's own cost; a small real-model sample is reported separately, because its
 p99 belongs to qwen2.5:14b and not to this server.
@@ -382,7 +382,7 @@ fill a dashboard category, measure this separately from detection.
 The outcome and step judges differ in what they are shown, in what they are asked, and in output
 schema. `results/ablation` crosses the first two under one schema, in one session, with the
 predictions and decision rules pushed before the runs started
-([PREDICTIONS.md](results/ablation/PREDICTIONS.md)). Every fault is paired here (300 pairs, 141
+([PREDICTIONS.md](https://github.com/mohammadi-hadi/trajectory-judge/blob/main/results/ablation/PREDICTIONS.md)). Every fault is paired here (300 pairs, 141
 clean runs):
 
 | Cell | Shown | Asked | False alarms | Δ reply unchanged (200) | Δ `unsupported_claim` (50) | Δ `premature_stop` (50) |
@@ -498,7 +498,7 @@ and the two chains that run end to end.
 ## Citation
 
 If this benchmark is useful in your research, please cite the paper (see
-[CITATION.cff](CITATION.cff)):
+[CITATION.cff](https://github.com/mohammadi-hadi/trajectory-judge/blob/main/CITATION.cff)):
 
 ```bibtex
 @inproceedings{mohammadi2026trajectoryjudge,
@@ -529,4 +529,4 @@ Written by [Hadi Mohammadi](https://mohammadi.cv).
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](https://github.com/mohammadi-hadi/trajectory-judge/blob/main/LICENSE).
