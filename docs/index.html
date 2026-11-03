@@ -76,6 +76,7 @@
   .step { font-weight: 600; }
   .scroll { overflow-x: auto; }
   .run { display: flex; align-items: center; gap: 6px; min-width: 640px; margin: 4px 0; }
+  @media (max-width: 600px) { .run { flex-wrap: wrap; min-width: 0; row-gap: 6px; } }
   .runlabel { font-size: 13px; font-weight: 600; margin: 10px 0 2px; }
   .chip {
     border: 1px solid var(--grid); border-radius: 6px; padding: 4px 9px; font-size: 13px;
@@ -164,9 +165,10 @@
   </div>
 
   <h2>Many flags, but no real catches</h2>
-  <div class="figure"><img src="figures/by_type.svg" alt="For four mistake types that leave the
+  <div class="figure"><picture><source media="(max-width: 600px)"
+  srcset="figures/by_type_narrow.svg"><img src="figures/by_type.svg" alt="For four mistake types that leave the
   reply unchanged, the reply-only judge flags broken runs and their correct twins equally (delta
-  0.00), while the step-by-step judge reaches delta 1.00."></div>
+  0.00), while the step-by-step judge reaches delta 1.00."></picture></div>
   <p class="caption">Ring = correct twin, dot = broken run. On hidden mistakes (yellow band), the
   <span class="reply">reply-only judge</span> flags 34% to
   76% of them, but flags their twins just as often: the dot sits
@@ -209,8 +211,9 @@
   other three it catches 1 time in 42.</p>
 
   <h2>Recall can fool you</h2>
-  <div class="figure"><img src="figures/judges.svg" alt="Recall and delta for five judges. The
-  small 8B judge has the highest recall, 0.99, and a delta of -0.01."></div>
+  <div class="figure"><picture><source media="(max-width: 600px)"
+  srcset="figures/judges_narrow.svg"><img src="figures/judges.svg" alt="Recall and delta for five judges. The
+  small 8B judge has the highest recall, 0.99, and a delta of -0.01."></picture></div>
   <p class="caption">Grey is how much a judge flags, black is how much it really catches. The
   small judge flags 397 of 400 runs: the best recall and no real
   catches. Asking the same judge 3 times costs 3&times; as much and does not help.</p>
